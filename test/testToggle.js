@@ -1,7 +1,8 @@
 var SM = require("../StateMachine.js");
-SM.Logger.debug = console.log;
 var assert = require('assert');
 
+// set up logging to console
+SM.Logger.debug = console.log;
 
 exports['testToggle'] = function testToggle() {
     var offState = new SM.State("OffState");

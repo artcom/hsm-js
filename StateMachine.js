@@ -271,9 +271,7 @@ var SM = (function () {
     };
 }()); // execute outer function to produce our closure
 
-exports['State'] = SM.State;
-exports['Sub'] = SM.Sub;
-exports['Parallel'] = SM.Parallel;
-exports['StateMachine'] = SM.StateMachine;
-exports['Logger'] = SM.Logger;
-
+// nodejs export
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = SM;
+};
