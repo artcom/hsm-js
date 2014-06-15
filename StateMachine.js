@@ -31,7 +31,7 @@
 /*jslint nomen:false plusplus:false*/
 /*globals Logger*/
 
-var SM = (function () {
+var HSM = (function () {
 
     ////////////
     // Public //
@@ -241,7 +241,7 @@ var SM = (function () {
             if (arguments[0] in self.stateObject.handler) {
                 nextState = self.stateObject.handler[arguments[0]].apply(self.stateObject, arguments);
             }
-            if (nextState instanceof SM.Transition) {
+            if (nextState instanceof HSM.Transition) {
                 self.transition             = nextState;
                 self.transition.switchState = self.switchState;
                 self.transition.travel();
@@ -273,5 +273,5 @@ var SM = (function () {
 
 // nodejs export
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SM;
+    module.exports = HSM;
 };
