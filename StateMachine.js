@@ -70,9 +70,6 @@ var HSM = (function () {
         self._exit = function (theNextState, theData) {
             _subMachine.teardown();
         };
-        self.terminateTransition = function () {
-            _subMachine.terminateTransition.apply(_subMachine, arguments);
-        };
         self.handleEvent = function () {
             _subMachine.handleEvent.apply(_subMachine, arguments);
         };
@@ -112,32 +109,10 @@ var HSM = (function () {
                 _subMachines[i].teardown();
             }
         };
-        self.terminateTransition = function () {
-            for (var i = 0; i < _subMachines.length; ++i) {
-                _subMachines[i].terminateTransition();
-            }
-        };
         self.handleEvent = function () {
             for (var i = 0; i < _subMachines.length; ++i) {
                 _subMachines[i].handleEvent.apply(_subMachines[i], arguments);
             }
-        };
-    };
-
-    var Transition = function (theNextState) {
-        this.Constructor(this, theNextState);
-    };
-
-    Transition.prototype.Constructor = function (self, theNextState) {
-        self.nextState = theNextState;
-        self.travel = function () {
-            self.switchState(self.nextState, {});
-        };
-        self.terminate = function () {
-            self.switchState(self.nextState, {});
-        };
-        self.handleEvent = function () {
-            return false; // ignore all events during transition.
         };
     };
 
@@ -210,22 +185,6 @@ var HSM = (function () {
             self.switchState(null, {});
         };
 
-        self.terminateTransition = function (evt) {
-            // Logger.debug("may terminate transition "+self.transition+" on "+evt+": "+_currentState, DEBUG_LEVELS.TRACE);
-            if (self.transition !== null) {
-                var nextState = self.transition.nextState;
-                if (self.transition.terminate(arguments[0])) {
-                    Logger.debug(arguments[0] + " terminated transition, skipping to " + nextState);
-                    self.transition.switchState(nextState); // forces pending state-change immediately
-                } else {
-                    Logger.trace("dropped " + arguments[0] + " during transition");
-                }
-            } else {
-                if ('terminateTransition' in self.stateObject) {
-                    self.stateObject.terminateTransition(evt);
-                }
-            }
-        };
 
         self.handleEvent = function () {
             if (self.transition !== null && !self.transition.handleEvent.apply(self.transition, arguments)) {
@@ -241,11 +200,7 @@ var HSM = (function () {
             if (arguments[0] in self.stateObject.handler) {
                 nextState = self.stateObject.handler[arguments[0]].apply(self.stateObject, arguments);
             }
-            if (nextState instanceof HSM.Transition) {
-                self.transition             = nextState;
-                self.transition.switchState = self.switchState;
-                self.transition.travel();
-            } else if (nextState instanceof Array) {
+            if (nextState instanceof Array) {
                 self.switchState(nextState[0], (nextState[1] || {}));
             } else if (typeof(nextState) === 'string') {
                 self.switchState(nextState, {});
@@ -265,7 +220,6 @@ var HSM = (function () {
         State        : State,
         Sub          : Sub,
         Parallel     : Parallel,
-        Transition   : Transition,
         StateMachine : StateMachine,
         Logger       : Logger
     };
