@@ -127,40 +127,40 @@ var HSM = (function () {
         }
 
         this.initialState = theStates.length ? theStates[0] : null;
-        this._curStateId = null;
+        this._curState = null;
     };
 
     StateMachine.prototype.toString = function toString() {
-        if (this._curStateId in this.states) {
-            return this.states[this._curStateId].toString();
+        if (this._curState !== null) {
+            return this._curState.toString();
         } else {
             return "_uninitializedStatemachine_";
         }
     };
 
     StateMachine.prototype.__defineGetter__('state', function () {
-        return this.states[this._curStateId];
+        return this._curState;
     });
 
     StateMachine.prototype.switchState = function (newState, theData) {
-        Logger.debug("State transition '" + this._curStateId + "' => '" + newState + "'");
+        Logger.debug("State transition '" + this._curState+ "' => '" + newState + "'");
         // call old state's exit handler
-        if (this._curStateId !== null && '_exit' in this.state) {
-            Logger.debug("<StateMachine::switchState> exiting state '" + this._curStateId + "'");
+        if (this._curState !== null && '_exit' in this.state) {
+            Logger.debug("<StateMachine::switchState> exiting state '" + this._curState + "'");
             this.state._exit(newState, theData);
         }
-        var oldState  = this._curStateId;
-        this._curStateId = newState ? newState.id : null;
+        var oldState  = this._curState;
+        this._curState = newState;
         // call new state's enter handler
-        if (this._curStateId !== null && '_enter' in this.state) {
-            Logger.debug("<StateMachine::switchState> entering state '" + this._curStateId + "'");
+        if (this._curState !== null && '_enter' in this.state) {
+            Logger.debug("<StateMachine::switchState> entering state '" + this._curState + "'");
             this.state._enter(oldState, theData);
         }
     };
 
     StateMachine.prototype.setup = function (theData) {
         Logger.debug("<StateMachine::setup> setting initial state: " + this.initialState);
-        this._curStateId = null;
+        this._curState = null;
         this.switchState(this.initialState, theData);
         return this;
     };
