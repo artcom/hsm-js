@@ -15,8 +15,8 @@ exports['testToggle'] = function testToggle() {
         return "OffState";
     };
 
-    var sm = new SM.StateMachine(offState, onState);
-    sm.setup();
+    var sm = new SM.StateMachine(offState, onState).setup();
+    
     assert.equal("OffState", sm.stateObject);
 
     sm.handleEvent("switched_off");

@@ -40,12 +40,17 @@ exports['testParallelStates'] = function testParallelStates() {
         return "KeyboardOff";
     };
 
-    var keyboardMachine = new SM.StateMachine(keyboardOff, keyboardOn);
-    keyboardMachine.setup();
+    var keyboardMachine = new SM.StateMachine([keyboardOff, keyboardOn]).setup();
 
     assert.equal("KeyboardOff", keyboardMachine.toString());
     
     keyboardMachine.handleEvent("plug");
+    assert.equal("KeyboardOn/(CapsLockOff|NumLockOff)", keyboardMachine.toString());
+    
+    keyboardMachine.handleEvent("capslock");
+    assert.equal("KeyboardOn/(CapsLockOn|NumLockOff)", keyboardMachine.toString());
+    
+    keyboardMachine.handleEvent("capslock");
     assert.equal("KeyboardOn/(CapsLockOff|NumLockOff)", keyboardMachine.toString());
 }
 

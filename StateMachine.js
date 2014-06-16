@@ -129,7 +129,6 @@ var HSM = (function () {
         }
 
         self.initialState = !!_myPreparedArguments.length ? _myPreparedArguments[0].id : null; // NOTE: initialState needs to be set before setup()
-        self.transition   = null;
         var _currentState = null;
 
         for (var i = 0; i  < _myPreparedArguments.length; ++i) {
@@ -151,12 +150,6 @@ var HSM = (function () {
         });
 
         self.switchState = function (newState, theData) {
-            if (self.transition !== null) {
-                self.transition.switchState = function () {
-                    Logger.debug("<StateMachine::switchState> events from the past caught up with you");
-                };
-                self.transition = null;
-            }
             Logger.debug("State transition '" + _currentState + "' => '" + newState + "'");
             // call old state's exit handler
             if (_currentState !== null && '_exit' in self.stateObject) {
@@ -176,26 +169,15 @@ var HSM = (function () {
             Logger.debug("<StateMachine::setup> setting initial state: " + self.initialState);
             _currentState = null;
             self.switchState(self.initialState, theData);
+            return self;
         };
         self.teardown = function () {
-            if (self.transition !== null) {
-                Logger.debug("<StateMachine::teardown> terminated transition on teardown");
-                self.transition.terminate();
-            }
             self.switchState(null, {});
         };
 
 
         self.handleEvent = function () {
-            if (self.transition !== null && !self.transition.handleEvent.apply(self.transition, arguments)) {
-                Logger.trace("<StateMachine::handleEvent> dropped " + arguments[0] + " during handleEvent: transition still active: " + _currentState);
-                return;
-            }
-            if (!_currentState) {
-                Logger.trace("dropped " + arguments[0] + " during handleEvent: because current state is null");
-                return;
-            }
-            Logger.trace("<StateMachine::handleEvent> got event " + arguments[0]);
+            Logger.debug("<StateMachine::handleEvent> got event " + arguments[0]);
             var nextState = null;
             if (arguments[0] in self.stateObject.handler) {
                 nextState = self.stateObject.handler[arguments[0]].apply(self.stateObject, arguments);
