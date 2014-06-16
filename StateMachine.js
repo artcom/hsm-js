@@ -28,7 +28,6 @@
 // along with ART+COM Y60.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-/*jslint nomen:false plusplus:false*/
 /*globals Logger*/
 
 var HSM = (function () {
@@ -66,7 +65,7 @@ var HSM = (function () {
         return this._subMachine.setup(theData);
     };
     Sub.prototype._exit = function (theNextState, theData) {
-        this._subMachine.teardown();
+        this._subMachine.teardown(theData);
     };
     Sub.prototype.handleEvent = function () {
         return this._subMachine.handleEvent.apply(this._subMachine, arguments);
@@ -98,13 +97,15 @@ var HSM = (function () {
     };
     Parallel.prototype._exit = function (theNextState, theData) {
         for (var i = 0; i < this._subMachines.length; ++i) {
-            this._subMachines[i].teardown();
+            this._subMachines[i].teardown(theData);
         }
     };
     Parallel.prototype.handleEvent = function () {
         var handled = false;
         for (var i = 0; i < this._subMachines.length; ++i) {
-            handled = handled || this._subMachines[i].handleEvent.apply(this._subMachines[i], arguments);
+            if (this._subMachines[i].handleEvent.apply(this._subMachines[i], arguments)) {
+                handled = true;
+            }
         }
         return handled;
     };
@@ -125,7 +126,7 @@ var HSM = (function () {
             this.states[theStates[i].id] = theStates[i];
         }
 
-        this.initialState = theStates.length ? theStates[0].id : null;
+        this.initialState = theStates.length ? theStates[0] : null;
         this._curStateId = null;
     };
 
@@ -149,7 +150,7 @@ var HSM = (function () {
             this.state._exit(newState, theData);
         }
         var oldState  = this._curStateId;
-        this._curStateId = newState;
+        this._curStateId = newState ? newState.id : null;
         // call new state's enter handler
         if (this._curStateId !== null && '_enter' in this.state) {
             Logger.debug("<StateMachine::switchState> entering state '" + this._curStateId + "'");
@@ -187,7 +188,7 @@ var HSM = (function () {
         if (handlerResult instanceof Array) {
             nextState = handlerResult.shift();
             data = handlerResult.shift();
-        } else if (typeof(handlerResult) === 'string') {
+        } else if (handlerResult instanceof State) {
             nextState = handlerResult;
         }
         if (nextState) {

@@ -1,30 +1,34 @@
+/*globals require, console, exports */
+
 var SM = require("../StateMachine.js");
 var assert = require('assert');
 
 // set up logging to console
 SM.Logger.debug = console.log;
 
-exports['testSubStates'] = function testSubStates() {
+exports.testSubStates = function testSubStates() {
     // Sub State Machine
     var quietState = new SM.State("Quiet");
+    var loudState = new SM.State("Loud");
+    
     quietState.handler.volume_up = function(theEvent) {
-        return "Loud";
+        return loudState;
     };
 
-    var loudState = new SM.State("Loud");
     loudState.handler.volume_down = function(theEvent) {
-        return "Quiet";
+        return quietState;
     };
     var volumeStateMachine = new SM.StateMachine([quietState, loudState]);
 
     // Main State Machine
     var offState = new SM.State("OffState");
-    offState.handler.switched_on = function(theEvent) {
-        return "OnState";
-    };
     var onState = new SM.Sub("OnState", volumeStateMachine);
+    
+    offState.handler.switched_on = function(theEvent) {
+        return onState;
+    };
     onState.handler.switched_off = function(theEvent) {
-        return "OffState";
+        return offState;
     };
 
     var sm = new SM.StateMachine([offState, onState]);

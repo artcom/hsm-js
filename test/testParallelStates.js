@@ -1,49 +1,54 @@
+/*globals require, console, exports */
+
 var SM = require("../StateMachine.js");
 var assert = require('assert');
 
 // set up logging to console
 SM.Logger.debug = console.log;
 
-exports['testParallelStates'] = function testParallelStates() {
+exports.testParallelStates = function testParallelStates() {
 
     // Numlock - this is a simple toggle
+    var numLockOff = new SM.State("NumLockOff");
     var numLockOn = new SM.State("NumLockOn");
+    
     numLockOn.handler.numlock = function(theEvent) {
-        return "NumLockOff";
+        return numLockOff;
     };
 
-    var numLockOff = new SM.State("NumLockOff");
     numLockOff.handler.numlock = function(theEvent) {
-        return "NumLockOn";
+        return numLockOn;
     };
     var numLockMachine = new SM.StateMachine([numLockOff, numLockOn]);
 
     // CapsLock - also a simple toggle
     var capsLockOn = new SM.State("CapsLockOn");
+    var capsLockOff = new SM.State("CapsLockOff");
+    
     capsLockOn.handler.capslock = function(theEvent) {
-        return "CapsLockOff";
+        return capsLockOff;
     };
 
-    var capsLockOff = new SM.State("CapsLockOff");
     capsLockOff.handler.capslock = function(theEvent) {
-        return "CapsLockOn";
+        return capsLockOn;
     };
     var capsLockMachine = new SM.StateMachine([capsLockOff, capsLockOn]);
 
     // Keyboard - can be plugged and unplugged. When plugged, it conatins two toggles: NumLock and CapsLock
     var keyboardOff = new SM.State("KeyboardOff");
-    keyboardOff.handler.plug = function(theEvent) {
-        return "KeyboardOn";
-    };
     var keyboardOn = new SM.Parallel("KeyboardOn", [capsLockMachine, numLockMachine]);
+    
+    keyboardOff.handler.plug = function(theEvent) {
+        return keyboardOn;
+    };
     keyboardOn.handler.unplug = function(theEvent) {
-        return "KeyboardOff";
+        return keyboardOff;
     };
 
     var keyboardMachine = new SM.StateMachine([keyboardOff, keyboardOn]).setup();
 
     // starts unplugged
-    assert.equal("KeyboardOff", keyboardMachine.toString());
+    assert.equal("KeyboardOff", keyboardMachine.state.id);
     
     // when plugged, initialize capslock and numlock to off
     keyboardMachine.handleEvent("plug");
@@ -75,5 +80,5 @@ exports['testParallelStates'] = function testParallelStates() {
     // plug the keyboard back in and check whether the toggles are back at their initial states 
     keyboardMachine.handleEvent("plug");
     assert.equal("KeyboardOn/(CapsLockOff|NumLockOff)", keyboardMachine.toString());
-}
+};
 
