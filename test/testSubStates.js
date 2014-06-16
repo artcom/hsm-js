@@ -15,7 +15,7 @@ exports['testSubStates'] = function testSubStates() {
     loudState.handler.volume_down = function(theEvent) {
         return "Quiet";
     };
-    var volumeStateMachine = new SM.StateMachine(quietState, loudState);
+    var volumeStateMachine = new SM.StateMachine([quietState, loudState]);
 
     // Main State Machine
     var offState = new SM.State("OffState");
@@ -27,9 +27,9 @@ exports['testSubStates'] = function testSubStates() {
         return "OffState";
     };
 
-    var sm = new SM.StateMachine(offState, onState);
+    var sm = new SM.StateMachine([offState, onState]);
     sm.setup();
-    assert.equal("OffState", sm.stateObject);
+    assert.equal("OffState", sm.state);
 
     sm.handleEvent("switched_on");
     assert.equal("OnState/(Quiet)", sm.toString());
@@ -41,5 +41,8 @@ exports['testSubStates'] = function testSubStates() {
     assert.equal("OffState", sm.toString());
     
     sm.handleEvent("switched_on");
+    assert.equal("OnState", sm.state.id);
+    assert.equal("Quiet", sm.state.subMachine.state.id);
+    assert.equal("Quiet", sm.state.subState.id);
     assert.equal("OnState/(Quiet)", sm.toString());
 };

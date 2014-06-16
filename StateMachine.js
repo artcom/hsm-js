@@ -37,162 +37,163 @@ var HSM = (function () {
     // Public //
     ////////////
     var Logger = { debug: function(){}, trace: function(){} };
+
     var State = function (theStateID) {
-        this.Constructor(this, theStateID);
+        this._id = theStateID;
+        this.handler = {};
+        //this.Constructor(this, theStateID);
     };
 
-    State.prototype.Constructor = function (self, theStateID) {
-        var _id = theStateID;
-        self.__defineGetter__('id', function () {
-            return _id;
-        });
-        self.toString = function toString() {
-            return _id;
-        };
-        self._enter = function (thePreviousState, theData) {
-        };
-        self._exit = function (theNextState, theData) {
-        };
-        self.handler = {};
+    State.prototype._enter = function (thePreviousState, theData) {
     };
+    State.prototype._exit = function (theNextState, theData) {
+    };
+    State.prototype.toString = function () {
+        return this._id;
+    };
+    State.prototype.__defineGetter__('id', function() {
+        return this._id;
+    });
 
     var Sub = function (theStateID, theSubMachine) {
-        this.Constructor(this, theStateID, theSubMachine);
+        this._subMachine = theSubMachine;
+        State.call(this, theStateID);
     };
 
-    Sub.prototype.Constructor = function (self, theStateID, theSubMachine) {
-        State.prototype.Constructor(self, theStateID);
+    Sub.prototype.__proto__ = State.prototype;
 
-        var _subMachine = theSubMachine;
-        self._enter = function (thePreviousState, theData) {
-            _subMachine.setup(theData);
-        };
-        self._exit = function (theNextState, theData) {
-            _subMachine.teardown();
-        };
-        self.handleEvent = function () {
-            _subMachine.handleEvent.apply(_subMachine, arguments);
-        };
-        self.toString = function toString() {
-            return self.id + "/(" + _subMachine + ")";
-        };
-        self.__defineGetter__("subMachine", function () {
-            return _subMachine;
-        });
-        self.__defineGetter__("states", function () {
-            return _subMachine.states;
-        });
+    Sub.prototype._enter = function (thePreviousState, theData) {
+        return this._subMachine.setup(theData);
+    };
+    Sub.prototype._exit = function (theNextState, theData) {
+        this._subMachine.teardown();
+    };
+    Sub.prototype.handleEvent = function () {
+        return this._subMachine.handleEvent.apply(this._subMachine, arguments);
+    };
+    Sub.prototype.toString = function toString() {
+        return this.id + "/(" + this._subMachine + ")";
+    };
+    Sub.prototype.__defineGetter__("subMachine", function () {
+        return this._subMachine;
+    });
+    Sub.prototype.__defineGetter__("subState", function () {
+        return this._subMachine.state;
+    });
+
+    var Parallel = function (theStateID, theSubMachines) {
+        this._subMachines = theSubMachines || [];
+        State.call(this, theStateID);
+    };
+    Parallel.prototype.__proto__ = State.prototype;
+
+    Parallel.prototype.toString = function toString() {
+        return this.id + "/(" + this._subMachines.join('|') + ")";
     };
 
-    var Parallel = function (theStateID) {
-        var myStateMachines = Array.prototype.slice.call(arguments);
-        myStateMachines.shift();
-        this.Constructor(this, theStateID, myStateMachines);
+    Parallel.prototype._enter = function (thePreviousState, theData) {
+        for (var i = 0; i < this._subMachines.length; ++i) {
+            this._subMachines[i].setup(theData);
+        }
     };
+    Parallel.prototype._exit = function (theNextState, theData) {
+        for (var i = 0; i < this._subMachines.length; ++i) {
+            this._subMachines[i].teardown();
+        }
+    };
+    Parallel.prototype.handleEvent = function () {
+        var handled = false;
+        for (var i = 0; i < this._subMachines.length; ++i) {
+            handled = handled || this._subMachines[i].handleEvent.apply(this._subMachines[i], arguments);
+        }
+        return handled;
+    };
+    Parallel.prototype.__defineGetter__("subMachines", function () {
+        return this._subMachines;
+    });
+    Parallel.prototype.__defineGetter__("parallelStates", function () {
+        return this._subMachines.map(function(s) { return s.state; });
+    });
 
-    Parallel.prototype.Constructor = function (self, theStateID, theStatemachines) {
-        State.prototype.Constructor(self, theStateID);
 
-        var _subMachines = theStatemachines || [];
-
-        self.toString = function toString() {
-            return self.id + "/(" + _subMachines.join('|') + ")";
-        };
-
-        self._enter = function (thePreviousState, theData) {
-            for (var i = 0; i < _subMachines.length; ++i) {
-                _subMachines[i].setup(theData);
+    var StateMachine = function (theStates) {
+        this.states = {};
+        for (var i = 0; i  < theStates.length; ++i) {
+            if (!(theStates[i] instanceof State)) {
+                throw ("Invalid Argument - not a state");
             }
-        };
-        self._exit = function (theNextState, theData) {
-            for (var i = 0; i < _subMachines.length; ++i) {
-                _subMachines[i].teardown();
-            }
-        };
-        self.handleEvent = function () {
-            for (var i = 0; i < _subMachines.length; ++i) {
-                _subMachines[i].handleEvent.apply(_subMachines[i], arguments);
-            }
-        };
-    };
-
-    var StateMachine = function () {
-        this.Constructor(this, arguments);
-    };
-
-    StateMachine.prototype.Constructor = function (self, theArguments) {
-        self.states = {};
-        var _myPreparedArguments = theArguments || [];
-        //XXX: needed to support arrays of states, beautify this
-        if (typeof(theArguments[0]) === 'object' && theArguments[0] instanceof Array) {
-            _myPreparedArguments = theArguments[0];
+            this.states[theStates[i].id] = theStates[i];
         }
 
-        self.initialState = !!_myPreparedArguments.length ? _myPreparedArguments[0].id : null; // NOTE: initialState needs to be set before setup()
-        var _currentState = null;
+        this.initialState = theStates.length ? theStates[0].id : null;
+        this._curStateId = null;
+    };
 
-        for (var i = 0; i  < _myPreparedArguments.length; ++i) {
-            self.states[_myPreparedArguments[i].id] = _myPreparedArguments[i];
+    StateMachine.prototype.toString = function toString() {
+        if (this._curStateId in this.states) {
+            return this.states[this._curStateId].toString();
+        } else {
+            return "_uninitializedStatemachine_";
+        }
+    };
+
+    StateMachine.prototype.__defineGetter__('state', function () {
+        return this.states[this._curStateId];
+    });
+
+    StateMachine.prototype.switchState = function (newState, theData) {
+        Logger.debug("State transition '" + this._curStateId + "' => '" + newState + "'");
+        // call old state's exit handler
+        if (this._curStateId !== null && '_exit' in this.state) {
+            Logger.debug("<StateMachine::switchState> exiting state '" + this._curStateId + "'");
+            this.state._exit(newState, theData);
+        }
+        var oldState  = this._curStateId;
+        this._curStateId = newState;
+        // call new state's enter handler
+        if (this._curStateId !== null && '_enter' in this.state) {
+            Logger.debug("<StateMachine::switchState> entering state '" + this._curStateId + "'");
+            this.state._enter(oldState, theData);
+        }
+    };
+
+    StateMachine.prototype.setup = function (theData) {
+        Logger.debug("<StateMachine::setup> setting initial state: " + this.initialState);
+        this._curStateId = null;
+        this.switchState(this.initialState, theData);
+        return this;
+    };
+    StateMachine.prototype.teardown = function () {
+        this.switchState(null, {});
+    };
+
+
+    StateMachine.prototype.handleEvent = function () {
+        Logger.debug("<StateMachine::handleEvent> got event " + arguments[0]);
+        var handled = false;
+        var handlerResult = null;
+        var nextState = undefined;
+        var data = undefined;
+        // check if the current state is a (nested) statemachine, if so, give it the event. 
+        // if it handles the event, stop processing it here.
+        if ('handleEvent' in this.state && 
+                this.state.handleEvent.apply(this.state, arguments)) {
+            return true;
         }
 
-        self.toString = function toString() {
-            if (_currentState in self.states) {
-                return self.states[_currentState].toString();
-            } else {
-                return "_uninitializedStatemachine_";
-            }
-        };
-        /*self.__defineGetter__("states", function () {
-            return _states;
-        });*/
-        self.__defineGetter__('stateObject', function () {
-            return self.states[_currentState];
-        });
-
-        self.switchState = function (newState, theData) {
-            Logger.debug("State transition '" + _currentState + "' => '" + newState + "'");
-            // call old state's exit handler
-            if (_currentState !== null && '_exit' in self.stateObject) {
-                Logger.debug("<StateMachine::switchState> exiting state '" + _currentState + "'");
-                self.stateObject._exit(newState, theData);
-            }
-            var oldState  = _currentState;
-            _currentState = newState;
-            // call new state's enter handler
-            if (_currentState !== null && '_enter' in self.stateObject) {
-                Logger.debug("<StateMachine::switchState> entering state '" + _currentState + "'");
-                self.stateObject._enter(oldState, theData);
-            }
-        };
-
-        self.setup = function (theData) {
-            Logger.debug("<StateMachine::setup> setting initial state: " + self.initialState);
-            _currentState = null;
-            self.switchState(self.initialState, theData);
-            return self;
-        };
-        self.teardown = function () {
-            self.switchState(null, {});
-        };
-
-
-        self.handleEvent = function () {
-            Logger.debug("<StateMachine::handleEvent> got event " + arguments[0]);
-            var nextState = null;
-            if (arguments[0] in self.stateObject.handler) {
-                nextState = self.stateObject.handler[arguments[0]].apply(self.stateObject, arguments);
-            }
-            if (nextState instanceof Array) {
-                self.switchState(nextState[0], (nextState[1] || {}));
-            } else if (typeof(nextState) === 'string') {
-                self.switchState(nextState, {});
-            } else {
-                // we don't know self event (nextState == null), so bubble down to the children
-                if ('handleEvent' in self.stateObject) {
-                    self.stateObject.handleEvent.apply(self.stateObject, arguments);
-                }
-            }
-        };
+        if (arguments[0] in this.state.handler) {
+            handlerResult = this.state.handler[arguments[0]].apply(this.state, arguments);
+        }
+        if (handlerResult instanceof Array) {
+            nextState = handlerResult.shift();
+            data = handlerResult.shift();
+        } else if (typeof(handlerResult) === 'string') {
+            nextState = handlerResult;
+        }
+        if (nextState) {
+            this.switchState(nextState, data);
+        }
+        return nextState !== undefined;
     };
 
     //////////////

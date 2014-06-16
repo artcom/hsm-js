@@ -7,7 +7,7 @@ SM.Logger.debug = console.log;
 exports['testToggle'] = function testToggle() {
     var offState = new SM.State("OffState");
     offState.handler.switched_on = function(theEvent) {
-        return "OnState";
+        return ["OnState"];
     };
 
     var onState = new SM.State("OnState");
@@ -15,16 +15,16 @@ exports['testToggle'] = function testToggle() {
         return "OffState";
     };
 
-    var sm = new SM.StateMachine(offState, onState).setup();
+    var sm = new SM.StateMachine([offState, onState]).setup();
     
-    assert.equal("OffState", sm.stateObject);
+    assert.equal("OffState", sm.state);
 
     sm.handleEvent("switched_off");
-    assert.equal("OffState", sm.stateObject);
+    assert.equal("OffState", sm.state);
 
     sm.handleEvent("switched_on");
-    assert.equal("OnState", sm.stateObject);
+    assert.equal("OnState", sm.state);
 
     sm.handleEvent("switched_on");
-    assert.equal("OnState", sm.stateObject);
+    assert.equal("OnState", sm.state);
 };

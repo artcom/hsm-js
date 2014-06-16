@@ -24,8 +24,8 @@ exports['testEnterAndExit'] = function testEnterAndExit() {
         enteredOnCount++;
     }
 
-    var sm = new SM.StateMachine(offState, onState).setup();
-    assert.equal("OffState", sm.stateObject);
+    var sm = new SM.StateMachine([offState, onState]).setup();
+    assert.equal("OffState", sm.state);
     assert.equal(0,enteredOnCount);
     assert.equal(0,exitedOffCount);
 
