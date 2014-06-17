@@ -12,39 +12,24 @@ exports.testParallelStates = function testParallelStates() {
     var numLockOff = new SM.State("NumLockOff");
     var numLockOn = new SM.State("NumLockOn");
     
-    numLockOn.handler.numlock = function(theEvent) {
-        return numLockOff;
-    };
-
-    numLockOff.handler.numlock = function(theEvent) {
-        return numLockOn;
-    };
+    numLockOn.handler.numlock = { next: numLockOff };
+    numLockOff.handler.numlock = { next: numLockOn };
     var numLockMachine = new SM.StateMachine([numLockOff, numLockOn]);
 
     // CapsLock - also a simple toggle
     var capsLockOn = new SM.State("CapsLockOn");
     var capsLockOff = new SM.State("CapsLockOff");
     
-    capsLockOn.handler.capslock = function(theEvent) {
-        return capsLockOff;
-    };
-
-    capsLockOff.handler.capslock = function(theEvent) {
-        return capsLockOn;
-    };
+    capsLockOn.handler.capslock = { next: capsLockOff };
+    capsLockOff.handler.capslock = { next: capsLockOn };
     var capsLockMachine = new SM.StateMachine([capsLockOff, capsLockOn]);
 
     // Keyboard - can be plugged and unplugged. When plugged, it conatins two toggles: NumLock and CapsLock
     var keyboardOff = new SM.State("KeyboardOff");
     var keyboardOn = new SM.Parallel("KeyboardOn", [capsLockMachine, numLockMachine]);
     
-    keyboardOff.handler.plug = function(theEvent) {
-        return keyboardOn;
-    };
-    keyboardOn.handler.unplug = function(theEvent) {
-        return keyboardOff;
-    };
-
+    keyboardOff.handler.plug = { next: keyboardOn };
+    keyboardOn.handler.unplug = { next: keyboardOff };
     var keyboardMachine = new SM.StateMachine([keyboardOff, keyboardOn]).setup();
 
     // starts unplugged

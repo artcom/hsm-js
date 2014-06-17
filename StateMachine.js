@@ -142,7 +142,7 @@ var HSM = (function () {
         return this._curState;
     });
 
-    StateMachine.prototype.switchState = function (newState, theData) {
+    StateMachine.prototype.switchState = function (newState, theAction, theData) {
         Logger.debug("State transition '" + this._curState+ "' => '" + newState + "'");
         // call old state's exit handler
         if (this._curState !== null && '_exit' in this.state) {
@@ -150,6 +150,9 @@ var HSM = (function () {
             this.state._exit(newState, theData);
         }
         var oldState  = this._curState;
+        if (theAction) { 
+            theAction.apply(this._curState, theData);
+        }
         this._curState = newState;
         // call new state's enter handler
         if (this._curState !== null && '_enter' in this.state) {
@@ -161,11 +164,11 @@ var HSM = (function () {
     StateMachine.prototype.setup = function (theData) {
         Logger.debug("<StateMachine::setup> setting initial state: " + this.initialState);
         this._curState = null;
-        this.switchState(this.initialState, theData);
+        this.switchState(this.initialState, null, theData);
         return this;
     };
     StateMachine.prototype.teardown = function () {
-        this.switchState(null, {});
+        this.switchState(null, null, {});
     };
 
 
@@ -183,18 +186,10 @@ var HSM = (function () {
         }
 
         if (arguments[0] in this.state.handler) {
-            handlerResult = this.state.handler[arguments[0]].apply(this.state, arguments);
+            var handler = this.state.handler[arguments[0]];
+            this.switchState(handler.next, handler.action, arguments[1]);
+            return true;
         }
-        if (handlerResult instanceof Array) {
-            nextState = handlerResult.shift();
-            data = handlerResult.shift();
-        } else if (handlerResult instanceof State) {
-            nextState = handlerResult;
-        }
-        if (nextState) {
-            this.switchState(nextState, data);
-        }
-        return nextState !== undefined;
     };
 
     //////////////

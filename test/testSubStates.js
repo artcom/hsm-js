@@ -11,28 +11,18 @@ exports.testSubStates = function testSubStates() {
     var quietState = new SM.State("Quiet");
     var loudState = new SM.State("Loud");
     
-    quietState.handler.volume_up = function(theEvent) {
-        return loudState;
-    };
-
-    loudState.handler.volume_down = function(theEvent) {
-        return quietState;
-    };
+    quietState.handler.volume_up = { next: loudState };
+    loudState.handler.volume_down = { next: quietState };
     var volumeStateMachine = new SM.StateMachine([quietState, loudState]);
 
     // Main State Machine
     var offState = new SM.State("OffState");
     var onState = new SM.Sub("OnState", volumeStateMachine);
     
-    offState.handler.switched_on = function(theEvent) {
-        return onState;
-    };
-    onState.handler.switched_off = function(theEvent) {
-        return offState;
-    };
+    offState.handler.switched_on = { next: onState };
+    onState.handler.switched_off = { next: offState };
 
-    var sm = new SM.StateMachine([offState, onState]);
-    sm.setup();
+    var sm = new SM.StateMachine([offState, onState]).setup();
     assert.equal("OffState", sm.state);
 
     sm.handleEvent("switched_on");

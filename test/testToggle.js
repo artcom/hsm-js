@@ -1,19 +1,17 @@
+/*globals require, console, exports */
+
 var SM = require("../StateMachine.js");
 var assert = require('assert');
 
 // set up logging to console
 SM.Logger.debug = console.log;
 
-exports['testToggle'] = function testToggle() {
-    var offState = new SM.State("OffState");
-    offState.handler.switched_on = function(theEvent) {
-        return [onState];
-    };
-
+exports.testToggle = function testToggle() {
     var onState = new SM.State("OnState");
-    onState.handler.switched_off = function(theEvent) {
-        return offState;
-    };
+    var offState = new SM.State("OffState");
+    
+    offState.handler.switched_on = { next:onState };
+    onState.handler.switched_off = { next: offState }; 
 
     var sm = new SM.StateMachine([offState, onState]).setup();
     

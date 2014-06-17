@@ -13,16 +13,14 @@ exports.testEnterAndExit = function testEnterAndExit() {
     var offState = new SM.State("OffState");
     var onState = new SM.State("OnState");
     
-    offState.handler.switched_on = function(theEvent) {
-        return onState;
-    };
+    offState.handler.switched_on = { next:onState };
+    
     offState._exit = function() {
         exitedOffCount++;
     };
 
-    onState.handler.switched_off = function(theEvent) {
-        return offState;
-    };
+    onState.handler.switched_off = { next: offState }; 
+    
     onState._enter = function() {
         enteredOnCount++;
     };
