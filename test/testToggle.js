@@ -11,13 +11,24 @@ var assert = buster.referee.assert;
 
 buster.testCase("testToggle", {
     setUp: function() {
+        var _ = this;
+        _.enteredOnCount = 0;
+        _.exitedOffCount = 0;
+        
         var onState = new HSM.State("OnState");
         var offState = new HSM.State("OffState");
 
         offState.handler.switched_on = { next: onState };
-        onState.handler.switched_off = { next: offState }; 
+        offState._exit = function() {
+            _.exitedOffCount++;
+        };
 
-        this.sm = new HSM.StateMachine([offState, onState]).setup();
+        onState.handler.switched_off = { next: offState }; 
+        onState._enter = function() {
+            _.enteredOnCount++;
+        };
+
+        _.sm = new HSM.StateMachine([offState, onState]).setup();
     },
     "testToggle" : function() {
         assert.equals("OffState", this.sm.state.id);
@@ -30,5 +41,27 @@ buster.testCase("testToggle", {
 
         this.sm.handleEvent("switched_on");
         assert.equals("OnState", this.sm.state.id);
+    },
+    "testEnterExit" : function () {
+        var _ = this;
+        assert.equals("OffState", _.sm.state.id);
+        assert.equals(0,_.enteredOnCount);
+        assert.equals(0,_.exitedOffCount);
+
+        _.sm.handleEvent("switched_off");
+        assert.equals(0,_.enteredOnCount);
+        assert.equals(0,_.exitedOffCount);
+
+        _.sm.handleEvent("switched_on");
+        assert.equals(1,_.enteredOnCount);
+        assert.equals(1,_.exitedOffCount);
+
+        _.sm.handleEvent("switched_on");
+        assert.equals(1,_.enteredOnCount);
+        assert.equals(1,_.exitedOffCount);
+
+        _.sm.handleEvent("switched_off");
+        assert.equals(1,_.enteredOnCount);
+        assert.equals(1,_.exitedOffCount);
     }
 });
