@@ -1,42 +1,51 @@
-/*globals require, console, exports */
+/*globals module, require, console, exports */
 
-var SM = require("../StateMachine.js");
-var assert = require('assert');
+if (typeof module === "object" && typeof require === "function") {
+    var buster = require("buster");
+    var HSM = require("../StateMachine.js");
+    // set up logging to console
+    HSM.Logger.debug = console.log;
+}
 
-// set up logging to console
-SM.Logger.debug = console.log;
+var assert = buster.referee.assert;
 
-exports.testSubStates = function testSubStates() {
-    // Sub State Machine
-    var quietState = new SM.State("Quiet");
-    var loudState = new SM.State("Loud");
+buster.testCase("testSubStates", {
+    setUp: function() {
+        var _ = this;
+        // Sub State Machine
+        var quietState = new HSM.State("Quiet");
+        var loudState = new HSM.State("Loud");
     
-    quietState.handler.volume_up = { next: loudState };
-    loudState.handler.volume_down = { next: quietState };
-    var volumeStateMachine = new SM.StateMachine([quietState, loudState]);
+        quietState.handler.volume_up = { next: loudState };
+        loudState.handler.volume_down = { next: quietState };
+        var volumeStateMachine = new HSM.StateMachine([quietState, loudState]);
 
-    // Main State Machine
-    var offState = new SM.State("OffState");
-    var onState = new SM.Sub("OnState", volumeStateMachine);
+        // Main State Machine
+        var offState = new HSM.State("OffState");
+        var onState = new HSM.Sub("OnState", volumeStateMachine);
     
-    offState.handler.switched_on = { next: onState };
-    onState.handler.switched_off = { next: offState };
+        offState.handler.switched_on = { next: onState };
+        onState.handler.switched_off = { next: offState };
 
-    var sm = new SM.StateMachine([offState, onState]).setup();
-    assert.equal("OffState", sm.state);
+        _.sm = new HSM.StateMachine([offState, onState]).setup();
+    },
+    "testSubMachine": function() {
+        var _ = this;
+        assert.equals("OffState", _.sm.state.toString());
 
-    sm.handleEvent("switched_on");
-    assert.equal("OnState/(Quiet)", sm.toString());
+        _.sm.handleEvent("switched_on");
+        assert.equals("OnState/(Quiet)", _.sm.toString());
 
-    sm.handleEvent("volume_up");
-    assert.equal("OnState/(Loud)", sm.toString());
+        _.sm.handleEvent("volume_up");
+        assert.equals("OnState/(Loud)", _.sm.toString());
     
-    sm.handleEvent("switched_off");
-    assert.equal("OffState", sm.toString());
+        _.sm.handleEvent("switched_off");
+        assert.equals("OffState", _.sm.toString());
     
-    sm.handleEvent("switched_on");
-    assert.equal("OnState", sm.state.id);
-    assert.equal("Quiet", sm.state.subMachine.state.id);
-    assert.equal("Quiet", sm.state.subState.id);
-    assert.equal("OnState/(Quiet)", sm.toString());
-};
+        _.sm.handleEvent("switched_on");
+        assert.equals("OnState", _.sm.state.id);
+        assert.equals("Quiet", _.sm.state.subMachine.state.id);
+        assert.equals("Quiet", _.sm.state.subState.id);
+        assert.equals("OnState/(Quiet)", _.sm.toString());
+    }
+});

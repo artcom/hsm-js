@@ -2,7 +2,7 @@ var config = module.exports;
 
 config["Tests"] = {
     rootPath: "../",
-    tests: ["test/testToggle.js"]
+    tests: ["test/test*.js"]
 };
 
 config["Browser tests"] = {
