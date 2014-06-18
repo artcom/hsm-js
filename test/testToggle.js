@@ -1,28 +1,34 @@
-/*globals require, console, exports */
+/*globals module, require, console, exports */
 
-var SM = require("../StateMachine.js");
-var assert = require('assert');
+if (typeof module === "object" && typeof require === "function") {
+    var buster = require("buster");
+    var HSM = require("../StateMachine.js");
+    // set up logging to console
+    HSM.Logger.debug = console.log;
+}
 
-// set up logging to console
-SM.Logger.debug = console.log;
+var assert = buster.referee.assert;
 
-exports.testToggle = function testToggle() {
-    var onState = new SM.State("OnState");
-    var offState = new SM.State("OffState");
-    
-    offState.handler.switched_on = { next:onState };
-    onState.handler.switched_off = { next: offState }; 
+buster.testCase("testToggle", {
+    setUp: function() {
+        var onState = new HSM.State("OnState");
+        var offState = new HSM.State("OffState");
 
-    var sm = new SM.StateMachine([offState, onState]).setup();
-    
-    assert.equal("OffState", sm.state.id);
+        offState.handler.switched_on = { next: onState };
+        onState.handler.switched_off = { next: offState }; 
 
-    sm.handleEvent("switched_off");
-    assert.equal("OffState", sm.state.id);
+        this.sm = new HSM.StateMachine([offState, onState]).setup();
+    },
+    "testToggle" : function() {
+        assert.equals("OffState", this.sm.state.id);
 
-    sm.handleEvent("switched_on");
-    assert.equal("OnState", sm.state.id);
+        this.sm.handleEvent("switched_off");
+        assert.equals("OffState", this.sm.state.id);
 
-    sm.handleEvent("switched_on");
-    assert.equal("OnState", sm.state.id);
-};
+        this.sm.handleEvent("switched_on");
+        assert.equals("OnState", this.sm.state.id);
+
+        this.sm.handleEvent("switched_on");
+        assert.equals("OnState", this.sm.state.id);
+    }
+});

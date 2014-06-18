@@ -1,49 +1,59 @@
-/*globals require, console, exports */
+/*globals module, require, console, exports */
 
-var SM = require("../StateMachine.js");
-var assert = require('assert');
+if (typeof module === "object" && typeof require === "function") {
+    var buster = require("buster");
+    var HSM = require("../StateMachine.js");
+    // set up logging to console
+    HSM.Logger.debug = console.log;
+}
+var assert = buster.referee.assert;
 
-// set up logging to console
-SM.Logger.debug = console.log;
 
-exports.testEnterAndExit = function testEnterAndExit() {
-    var enteredOnCount = 0;
-    var exitedOffCount = 0;
+buster.testCase("testEnterAndExit", {
+    setUp: function () {
+        var _ = this;
+        _.enteredOnCount = 0;
+        _.exitedOffCount = 0;
 
-    var offState = new SM.State("OffState");
-    var onState = new SM.State("OnState");
+        var offState = new HSM.State("OffState");
+        var onState = new HSM.State("OnState");
     
-    offState.handler.switched_on = { next:onState };
+        offState.handler.switched_on = { next:onState };
     
-    offState._exit = function() {
-        exitedOffCount++;
-    };
+        offState._exit = function() {
+            _.exitedOffCount++;
+        };
 
-    onState.handler.switched_off = { next: offState }; 
+        onState.handler.switched_off = { next: offState }; 
     
-    onState._enter = function() {
-        enteredOnCount++;
-    };
+        onState._enter = function() {
+            _.enteredOnCount++;
+        };
 
-    var sm = new SM.StateMachine([offState, onState]).setup();
-    assert.equal("OffState", sm.state.id);
-    assert.equal(0,enteredOnCount);
-    assert.equal(0,exitedOffCount);
+        _.sm = new HSM.StateMachine([offState, onState]).setup();
+    },
+    "testEnterExit" : function () {
+        var _ = this;
+        assert.equals("OffState", _.sm.state.id);
+        assert.equals(0,_.enteredOnCount);
+        assert.equals(0,_.exitedOffCount);
 
-    sm.handleEvent("switched_off");
-    assert.equal(0,enteredOnCount);
-    assert.equal(0,exitedOffCount);
+        _.sm.handleEvent("switched_off");
+        assert.equals(0,_.enteredOnCount);
+        assert.equals(0,_.exitedOffCount);
 
-    sm.handleEvent("switched_on");
-    assert.equal(1,enteredOnCount);
-    assert.equal(1,exitedOffCount);
+        _.sm.handleEvent("switched_on");
+        assert.equals(1,_.enteredOnCount);
+        assert.equals(1,_.exitedOffCount);
 
-    sm.handleEvent("switched_on");
-    assert.equal(1,enteredOnCount);
-    assert.equal(1,exitedOffCount);
+        _.sm.handleEvent("switched_on");
+        assert.equals(1,_.enteredOnCount);
+        assert.equals(1,_.exitedOffCount);
 
-    sm.handleEvent("switched_off");
-    assert.equal(1,enteredOnCount);
-    assert.equal(1,exitedOffCount);
-};
+        _.sm.handleEvent("switched_off");
+        assert.equals(1,_.enteredOnCount);
+        assert.equals(1,_.exitedOffCount);
+    }
+
+});
 
