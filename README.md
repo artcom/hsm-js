@@ -13,12 +13,12 @@ Simple, yet powerful hierarchial state machine framework. Supports Sub-Statemach
 Each state has a map of event handlers. These handlers will be called when the state receives the respective event.
 The handlers can return one of the following:
 
-State.handler[event] = [newState, actionFunc, kind];
-State.handler[event] = [[guardFunc, newState, actionFunc, kind],
-                        [guardFunc, newState, actionFunc, kind],
-                        [guardFunc, newState, actionFunc, kind],
-                        [guardFunc, newState, actionFunc, kind],
-                        ];
+    State.handler[event] = [newState, actionFunc, kind];
+    State.handler[event] = [[guardFunc, newState, actionFunc, kind],
+                            [guardFunc, newState, actionFunc, kind],
+                            [guardFunc, newState, actionFunc, kind],
+                            [guardFunc, newState, actionFunc, kind],
+                           ];
 
 * a state object: this will be the new state.
 * this: the current state will exit and re-enter (self-transition)
