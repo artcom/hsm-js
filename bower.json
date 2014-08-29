@@ -1,0 +1,22 @@
+{
+  "name": "hsm-js",
+  "version": "0.9.1",
+  "homepage": "https://github.com/Mask/hsm-js",
+  "authors": [
+    "Martin Skinner <martin@artcom.de>"
+  ],
+  "description": "Hierarchial State Machine for Javascript",
+  "main": "StateMachine.js",
+  "keywords": [
+    "HSM",
+    "UML"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

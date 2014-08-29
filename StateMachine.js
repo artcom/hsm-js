@@ -171,6 +171,13 @@ var HSM = (function () {
         this.switchState(null, null, {});
     };
 
+    StateMachine.prototype.tryTransition = function(handler, data) {
+        if (handler.guard == undefined || handler.guard(data)) {
+            this.switchState(handler.next, handler.action, data);
+            return true;
+        }
+        return false;
+    }
 
     StateMachine.prototype.handleEvent = function () {
         Logger.debug("<StateMachine::handleEvent> got event " + arguments[0]);
@@ -186,9 +193,17 @@ var HSM = (function () {
         }
 
         if (arguments[0] in this.state.handler) {
-            var handler = this.state.handler[arguments[0]];
-            this.switchState(handler.next, handler.action, arguments[1]);
-            return true;
+            if (this.state.handler[arguments[0]] instanceof Array) {
+                var handlers = this.state.handler[arguments[0]];
+                for (var i = 0; i < handlers.length; ++i) {
+                    if (this.tryTransition(handlers[i], arguments[1])) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return this.tryTransition(this.state.handler[arguments[0]], arguments[1]);
+            }
         }
     };
 

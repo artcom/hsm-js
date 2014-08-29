@@ -11,17 +11,14 @@ Simple, yet powerful hierarchial state machine framework. Supports Sub-Statemach
 Each state has a map of event handlers. These handlers will be called when the state receives the respective event.
 The handlers can return one of the following:
 
-
-* a state object: this will be the new state.
-* this: the current state will exit and re-enter (self-transition)
-* null: the event will be considered processed and will not bubble up. The state will remain the same and no exit / entry handlers involed (internal transition)
-* undefined: the event will be considered not processed and will bubble up.
+* true: the event will be considered processed and will not bubble up.
+* false: the event will be considered not processed and will bubble up.
 
 Event handlers are added to the handler[] array of each state:
 
     State.handler[event] = { next: newState, action: actionFunc };
 
-## Guards (TODO)
+## Guards 
 
 Guards (or guard conditions) affect the behaviour of a state machine by enabling actions or transitions only when they evaluate to TRUE and disabling them when they evaluate to FALSE. 
 When using guards, multiple event handlers can be bound to a single trigger with a guard. Each guard is evaluated until one returns true. The respective handler is then invoked (after calling
