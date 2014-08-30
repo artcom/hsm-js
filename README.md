@@ -6,6 +6,10 @@
 
 Simple, yet powerful hierarchial state machine framework. Supports Sub-Statemachines (nested states) and Parallel-Statemachines (orthogal regions) and entry and exit handlers.  
 
+The following state machine is used [in the tests](test/testAdvanced.js) and this documentation to illustrate the features.
+
+![advanced state machine example](doc/advanced.png "advanced state machine example")
+
 ## Actions and State Transitions
 
 Each state has a map of event handlers. These handlers will be called when the state receives the respective event.

@@ -57,8 +57,18 @@ buster.testCase("testAdvanced", {
     
         var b = new HSM.Sub("b", new HSM.StateMachine([b1, b2]));
 
+        // State Machine c1
+        var c11 = new HSM.State("c11");
+        var c12 = new HSM.State("c12");
+    
+        var c21 = new HSM.State("c21");
+        var c22 = new HSM.State("c22");
+        
+        var c = new HSM.Parallel("c", new HSM.StateMachine([c11, c12]), 
+                                      new HSM.StateMachine([c21, c22]));
+        
         // Top State Machine
-        _.sm = new HSM.StateMachine([a, b]).setup();
+        _.sm = new HSM.StateMachine([a, b, c]).setup();
 
     },
     "testEnter": function() {
