@@ -23,13 +23,7 @@ buster.testCase("testAdvanced", {
         var a3 = new HSM.State("a3");
         a3._enter = function() { _.log.push("a3_entered"); };
 
-        a1.handler.T1 = {
-            next: a2,
-            guard: function (theData) {
-                return theData;
-            }
-        }
-        a1.handler.T2 = [
+        a1.handler.T1 = [
             {
                 next: a2,
                 guard: function (theData) {
@@ -43,6 +37,15 @@ buster.testCase("testAdvanced", {
                 }
             }
         ]
+        a2.handler.T2 = {
+            next: a3,
+            action: function (theData) {
+                this.handleEvent("T3");
+            }
+        }
+        a3.handler.T3 = {
+            next: a1
+        }
 
     
         var a = new HSM.Sub("a", new HSM.StateMachine([a1, a2, a3]));
@@ -75,22 +78,23 @@ buster.testCase("testAdvanced", {
         var _ = this;
         assert.equals(["a_entered", "a1_entered"], _.log);
     },
-    "testSingleGuard": function() {
-        var _ = this;
-        _.log= [];
-        _.sm.handleEvent("T1", false);
-        assert.equals([], _.log);
-    },
     "testFirstGuard": function() {
         var _ = this;
         _.log= [];
-        _.sm.handleEvent("T2", true);
+        _.sm.handleEvent("T1", true);
         assert.equals(["a2_entered"], _.log);
     },
     "testSecondGuard": function() {
         var _ = this;
         _.log= [];
-        _.sm.handleEvent("T2", false);
+        _.sm.handleEvent("T1", false);
         assert.equals(["a3_entered"], _.log);
-    }
+    },
+    "testRunToCompletion": function() {
+        var _ = this;
+        _.log= [];
+        _.sm.handleEvent("T1", true);
+        _.sm.handleEvent("T2", true);
+        assert.equals(["a2_entered", "a3_entered", "a1_entered"], _.log);
+    },
 });

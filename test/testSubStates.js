@@ -18,16 +18,21 @@ buster.testCase("testSubStates", {
     
         quietState.handler.volume_up = { next: loudState };
         loudState.handler.volume_down = { next: quietState };
-        var volumeStateMachine = new HSM.StateMachine([quietState, loudState]);
+        _.volumeStateMachine = new HSM.StateMachine([quietState, loudState]);
 
         // Main State Machine
         var offState = new HSM.State("OffState");
-        var onState = new HSM.Sub("OnState", volumeStateMachine);
+        var onState = new HSM.Sub("OnState", _.volumeStateMachine);
     
         offState.handler.switched_on = { next: onState };
         onState.handler.switched_off = { next: offState };
 
         _.sm = new HSM.StateMachine([offState, onState]).init();
+    },
+    "testAncestors": function() {
+        var _ = this;
+        assert.equals([], _.sm.ancestors);
+        assert.equals([_.sm], _.volumeStateMachine.ancestors);
     },
     "testSubMachine": function() {
         var _ = this;

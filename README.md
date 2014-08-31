@@ -10,17 +10,35 @@ The following state machine is used [in the tests](test/testAdvanced.js) and thi
 
 ![advanced state machine example](doc/advanced.png "advanced state machine example")
 
+## States and State Machines
+
+States are specified by creating HSM.State instances. They are then composed to a state machine by passing them to the HSM.StateMachine constructor.
+
+        var onState = new HSM.State("OnState");
+        var offState = new HSM.State("OffState");
+        var sm = new HSM.StateMachine([offState, onState]);
+
+By convention, the first state passed is the initial state. The state machine is then initialized by HSM.StateMachine.init():
+
+        sm.init();
+
+This starts the state machine and activates the initial state, calling its entry handler (see below). The state machine is now ready to 
+handle events.
+
+
 ## Actions and State Transitions
 
 Each state has a map of event handlers. These handlers will be called when the state receives the respective event.
-The handlers can return one of the following:
-
-* true: the event will be considered processed and will not bubble up.
-* false: the event will be considered not processed and will bubble up.
-
 Event handlers are added to the handler[] array of each state:
 
+    State.handler[event] = { next: newState };
+
+This specifies a transition from State to newState for event. Additionally, an action can be added to the transition:
+
     State.handler[event] = { next: newState, action: actionFunc };
+
+Events are triggered by calling the StateMachine.handleEvent() method. This can even be done inside an event handler's actionFunc.  If an event is 
+triggered while an event is being handled it will be queued until the current event completes. This is known as the run-to-completion (RTC) execution model.  
 
 ## Guards 
 

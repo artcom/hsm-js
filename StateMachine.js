@@ -39,8 +39,8 @@ var HSM = (function () {
 
     var State = function (theStateID) {
         this._id = theStateID;
+        this._owner = null;
         this.handler = {};
-        //this.Constructor(this, theStateID);
     };
 
     State.prototype._enter = function (thePreviousState, theData) {
@@ -53,10 +53,22 @@ var HSM = (function () {
     State.prototype.__defineGetter__('id', function() {
         return this._id;
     });
+    State.prototype.__defineGetter__('owner', function() {
+        Logger.debug("getter called for "+this._id);
+        return this._owner;
+    });
+
+    State.prototype.__defineSetter__('owner', function(theOwnerMachine) {
+        if (this._owner) {
+            throw ("Invalid Argument - state '"+this._id+"'already owned");
+        }
+        this._owner = theOwnerMachine;
+    });
+
 
     var Sub = function (theStateID, theSubMachine) {
-        this._subMachine = theSubMachine;
         State.call(this, theStateID);
+        this._subMachine = theSubMachine;
     };
 
     Sub.prototype.__proto__ = State.prototype;
@@ -67,8 +79,12 @@ var HSM = (function () {
     Sub.prototype._exit = function (theNextState, theData) {
         this._subMachine.teardown(theData);
     };
-    Sub.prototype.handleEvent = function () {
-        return this._subMachine.handleEvent.apply(this._subMachine, arguments);
+    Sub.prototype.__defineSetter__('owner', function(theOwnerMachine) {
+        State.prototype.__lookupSetter__('owner').call(this, theOwnerMachine);
+        this._subMachine.ancestors = this._owner.ancestors.concat([this._owner]); 
+    });
+    Sub.prototype._handle = function () {
+        return this._subMachine._handle.apply(this._subMachine, arguments);
     };
     Sub.prototype.toString = function toString() {
         return this.id + "/(" + this._subMachine + ")";
@@ -81,8 +97,12 @@ var HSM = (function () {
     });
 
     var Parallel = function (theStateID, theSubMachines) {
-        this._subMachines = theSubMachines || [];
         State.call(this, theStateID);
+        this._subMachines = theSubMachines || [];
+        //var subAncestors = this.owner.ancestors.concat([this.owner]);
+        //for (var i = 0; i < this._subMachines.length; ++i) {
+        //    this._subMachines[i].ancestors = subAncestors; 
+        //}
     };
     Parallel.prototype.__proto__ = State.prototype;
 
@@ -100,10 +120,10 @@ var HSM = (function () {
             this._subMachines[i].teardown(theData);
         }
     };
-    Parallel.prototype.handleEvent = function () {
+    Parallel.prototype._handle = function () {
         var handled = false;
         for (var i = 0; i < this._subMachines.length; ++i) {
-            if (this._subMachines[i].handleEvent.apply(this._subMachines[i], arguments)) {
+            if (this._subMachines[i]._handle.apply(this._subMachines[i], arguments)) {
                 handled = true;
             }
         }
@@ -119,15 +139,19 @@ var HSM = (function () {
 
     var StateMachine = function (theStates) {
         this.states = {};
+        this.ancestors = [];
+        this._curState = null;
+        this._eventInProgress = false;
+        this._eventQueue = [];
         for (var i = 0; i  < theStates.length; ++i) {
             if (!(theStates[i] instanceof State)) {
                 throw ("Invalid Argument - not a state");
             }
             this.states[theStates[i].id] = theStates[i];
+            theStates[i].owner = this;
         }
 
         this.initialState = theStates.length ? theStates[0] : null;
-        this._curState = null;
     };
 
     StateMachine.prototype.toString = function toString() {
@@ -151,7 +175,7 @@ var HSM = (function () {
         }
         var oldState  = this._curState;
         if (theAction) { 
-            theAction.apply(this._curState, theData);
+            theAction.apply(this, [oldState, newState].concat(theData));
         }
         this._curState = newState;
         // call new state's enter handler
@@ -180,15 +204,34 @@ var HSM = (function () {
     }
 
     StateMachine.prototype.handleEvent = function () {
-        Logger.debug("<StateMachine::handleEvent> got event " + arguments[0]);
+        if (this.ancestors.length > 0) {
+            // if we are not at the top-level state machine,
+            // call again at the top-level state machine
+            this.ancestors[0].handleEvent.apply(this.ancestors[0], arguments);
+        } else {
+            this._eventQueue.push(arguments);
+            // we are at the top-level state machine
+            if (this._eventInProgress === true) {
+                Logger.debug("<StateMachine>::handleEvent: queuing event "+arguments[0]);
+            } else {
+                this._eventInProgress = true;
+                while (this._eventQueue.length > 0) {
+                    this._handle.apply(this, this._eventQueue.shift());
+                };
+                this._eventInProgress = false;
+            }
+        }
+    }
+    StateMachine.prototype._handle = function () {
+        Logger.debug("<StateMachine::_handle> handling event " + arguments[0]);
         var handled = false;
         var handlerResult = null;
         var nextState = undefined;
         var data = undefined;
         // check if the current state is a (nested) statemachine, if so, give it the event. 
         // if it handles the event, stop processing it here.
-        if ('handleEvent' in this.state && 
-                this.state.handleEvent.apply(this.state, arguments)) {
+        if ('_handle' in this.state && 
+                this.state._handle.apply(this.state, arguments)) {
             return true;
         }
 
