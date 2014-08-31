@@ -28,7 +28,7 @@
 // along with ART+COM Y60.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-/*globals Logger*/
+/*globals module*/
 
 var HSM = (function () {
 
@@ -44,8 +44,14 @@ var HSM = (function () {
     };
 
     State.prototype._enter = function (thePreviousState, theData) {
+        if ('on_entry' in this) {
+            this.on_entry.apply(this, arguments);
+        }
     };
     State.prototype._exit = function (theNextState, theData) {
+        if ('on_exit' in this) {
+            this.on_exit.apply(this, arguments);
+        }
     };
     State.prototype.toString = function () {
         return this._id;
@@ -71,13 +77,19 @@ var HSM = (function () {
         this._subMachine = theSubMachine;
     };
 
-    Sub.prototype.__proto__ = State.prototype;
+    // inheritance
+    Sub.prototype = Object.create(State.prototype);
+    Sub.prototype.constructor = Sub;
+    // old-style inheritance - causes performance warnings in newer JS engines
+    // Sub.prototype.__proto__ = State.prototype;
 
     Sub.prototype._enter = function (thePreviousState, theData) {
+        State.prototype._enter.apply(this, arguments);
         return this._subMachine.init(theData);
     };
     Sub.prototype._exit = function (theNextState, theData) {
         this._subMachine.teardown(theData);
+        State.prototype._exit.apply(this, arguments);
     };
     Sub.prototype.__defineSetter__('owner', function(theOwnerMachine) {
         State.prototype.__lookupSetter__('owner').call(this, theOwnerMachine);
@@ -104,25 +116,33 @@ var HSM = (function () {
         //    this._subMachines[i].ancestors = subAncestors; 
         //}
     };
-    Parallel.prototype.__proto__ = State.prototype;
+    
+    // inheritance
+    Parallel.prototype = Object.create(State.prototype);
+    Parallel.prototype.constructor = Parallel;
+    // old-style inheritance - causes performance warnings in newer JS engines
+    // Parallel.prototype.__proto__ = State.prototype;
 
     Parallel.prototype.toString = function toString() {
         return this.id + "/(" + this._subMachines.join('|') + ")";
     };
 
     Parallel.prototype._enter = function (thePreviousState, theData) {
-        for (var i = 0; i < this._subMachines.length; ++i) {
+        var i;
+        for (i = 0; i < this._subMachines.length; ++i) {
             this._subMachines[i].init(theData);
         }
     };
     Parallel.prototype._exit = function (theNextState, theData) {
-        for (var i = 0; i < this._subMachines.length; ++i) {
+        var i;
+        for (i = 0; i < this._subMachines.length; ++i) {
             this._subMachines[i].teardown(theData);
         }
     };
     Parallel.prototype._handle = function () {
         var handled = false;
-        for (var i = 0; i < this._subMachines.length; ++i) {
+        var i;
+        for (i = 0; i < this._subMachines.length; ++i) {
             if (this._subMachines[i]._handle.apply(this._subMachines[i], arguments)) {
                 handled = true;
             }
@@ -143,7 +163,8 @@ var HSM = (function () {
         this._curState = null;
         this._eventInProgress = false;
         this._eventQueue = [];
-        for (var i = 0; i  < theStates.length; ++i) {
+        var i;
+        for (i = 0; i  < theStates.length; ++i) {
             if (!(theStates[i] instanceof State)) {
                 throw ("Invalid Argument - not a state");
             }
@@ -157,9 +178,8 @@ var HSM = (function () {
     StateMachine.prototype.toString = function toString() {
         if (this._curState !== null) {
             return this._curState.toString();
-        } else {
-            return "_uninitializedStatemachine_";
         }
+        return "_uninitializedStatemachine_";
     };
 
     StateMachine.prototype.__defineGetter__('state', function () {
@@ -196,14 +216,14 @@ var HSM = (function () {
     };
 
     StateMachine.prototype.tryTransition = function(handler, data) {
-        if (handler.guard == undefined || handler.guard(data)) {
+        if ( !('guard' in handler) || handler.guard(data)) {
             this.switchState(handler.next, handler.action, data);
             return true;
         }
         return false;
-    }
+    };
 
-    StateMachine.prototype.handleEvent = function () {
+    StateMachine.prototype.handleEvent = function (ev) {
         if (this.ancestors.length > 0) {
             // if we are not at the top-level state machine,
             // call again at the top-level state machine
@@ -212,22 +232,22 @@ var HSM = (function () {
             this._eventQueue.push(arguments);
             // we are at the top-level state machine
             if (this._eventInProgress === true) {
-                Logger.debug("<StateMachine>::handleEvent: queuing event "+arguments[0]);
+                Logger.debug("<StateMachine>::handleEvent: queuing event "+ev);
             } else {
                 this._eventInProgress = true;
                 while (this._eventQueue.length > 0) {
                     this._handle.apply(this, this._eventQueue.shift());
-                };
+                }
                 this._eventInProgress = false;
             }
         }
-    }
-    StateMachine.prototype._handle = function () {
-        Logger.debug("<StateMachine::_handle> handling event " + arguments[0]);
+    };
+    StateMachine.prototype._handle = function (ev, data) {
+        Logger.debug("<StateMachine::_handle> handling event " + ev);
         var handled = false;
         var handlerResult = null;
-        var nextState = undefined;
-        var data = undefined;
+        var nextState;
+
         // check if the current state is a (nested) statemachine, if so, give it the event. 
         // if it handles the event, stop processing it here.
         if ('_handle' in this.state && 
@@ -235,18 +255,18 @@ var HSM = (function () {
             return true;
         }
 
-        if (arguments[0] in this.state.handler) {
-            if (this.state.handler[arguments[0]] instanceof Array) {
-                var handlers = this.state.handler[arguments[0]];
-                for (var i = 0; i < handlers.length; ++i) {
-                    if (this.tryTransition(handlers[i], arguments[1])) {
+        if (ev in this.state.handler) {
+            if (this.state.handler[ev] instanceof Array) {
+                var handlers = this.state.handler[ev];
+                var i;
+                for (i = 0; i < handlers.length; ++i) {
+                    if (this.tryTransition(handlers[i], data)) {
                         return true;
                     }
                 }
                 return false;
-            } else {
-                return this.tryTransition(this.state.handler[arguments[0]], arguments[1]);
             }
+            return this.tryTransition(this.state.handler[ev], data);
         }
         return false;
 
@@ -267,4 +287,4 @@ var HSM = (function () {
 // nodejs export
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = HSM;
-};
+}

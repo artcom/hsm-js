@@ -54,8 +54,7 @@ the usual exit handler).
 
 ## Entry and Exit Actions
 
-Each state has an overridable \_enter() and \_exit() function - you can add your enter and exit code here. Be sure to call the base classes implementation if your state is composite (i.e. 
-a Sub or Parallel.)
+Each state can have a on\_entry and/or on\_exit function. They will be invoked when the state is entered or exited. 
 
 ## Internal, External and Local Transitions (TODO)
 
