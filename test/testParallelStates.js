@@ -35,7 +35,7 @@ buster.testCase("testToggle", {
     
         keyboardOff.handler.plug = { next: keyboardOn };
         keyboardOn.handler.unplug = { next: keyboardOff };
-        _.keyboardMachine = new HSM.StateMachine([keyboardOff, keyboardOn]).setup();
+        _.keyboardMachine = new HSM.StateMachine([keyboardOff, keyboardOn]).init();
     },
     "Parallel Test": function() {
         var _ = this;

@@ -27,7 +27,7 @@ buster.testCase("testSubStates", {
         offState.handler.switched_on = { next: onState };
         onState.handler.switched_off = { next: offState };
 
-        _.sm = new HSM.StateMachine([offState, onState]).setup();
+        _.sm = new HSM.StateMachine([offState, onState]).init();
     },
     "testSubMachine": function() {
         var _ = this;

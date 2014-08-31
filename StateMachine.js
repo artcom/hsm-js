@@ -62,7 +62,7 @@ var HSM = (function () {
     Sub.prototype.__proto__ = State.prototype;
 
     Sub.prototype._enter = function (thePreviousState, theData) {
-        return this._subMachine.setup(theData);
+        return this._subMachine.init(theData);
     };
     Sub.prototype._exit = function (theNextState, theData) {
         this._subMachine.teardown(theData);
@@ -92,7 +92,7 @@ var HSM = (function () {
 
     Parallel.prototype._enter = function (thePreviousState, theData) {
         for (var i = 0; i < this._subMachines.length; ++i) {
-            this._subMachines[i].setup(theData);
+            this._subMachines[i].init(theData);
         }
     };
     Parallel.prototype._exit = function (theNextState, theData) {
@@ -161,8 +161,8 @@ var HSM = (function () {
         }
     };
 
-    StateMachine.prototype.setup = function (theData) {
-        Logger.debug("<StateMachine::setup> setting initial state: " + this.initialState);
+    StateMachine.prototype.init = function (theData) {
+        Logger.debug("<StateMachine::init> setting initial state: " + this.initialState);
         this._curState = null;
         this.switchState(this.initialState, null, theData);
         return this;
@@ -205,6 +205,8 @@ var HSM = (function () {
                 return this.tryTransition(this.state.handler[arguments[0]], arguments[1]);
             }
         }
+        return false;
+
     };
 
     //////////////

@@ -68,7 +68,7 @@ buster.testCase("testAdvanced", {
                                       new HSM.StateMachine([c21, c22]));
         
         // Top State Machine
-        _.sm = new HSM.StateMachine([a, b, c]).setup();
+        _.sm = new HSM.StateMachine([a, b, c]).init();
 
     },
     "testEnter": function() {

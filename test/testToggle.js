@@ -28,7 +28,7 @@ buster.testCase("testToggle", {
             _.enteredOnCount++;
         };
 
-        _.sm = new HSM.StateMachine([offState, onState]).setup();
+        _.sm = new HSM.StateMachine([offState, onState]).init();
     },
     "testToggle" : function() {
         assert.equals("OffState", this.sm.state.id);
