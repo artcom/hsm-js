@@ -1,6 +1,6 @@
 # Hierarchial State Machine for Javascript
 
-[![Build Status][BS img]][Build Status]
+[![Build Status][BS img]][Build Status] [API docs](http://mask.github.io/hsm-js/HSM.html)
 
 ## Description
 
@@ -48,8 +48,8 @@ When using guards, multiple event handlers can be bound to a single trigger with
 the usual exit handler).
 
         a1.handler.T1 = [
-            { next: a2, guard: function (data) { return data==true; } },
-            { next: a3, guard: function (data) { return data==false; } }
+            { next: a2, guard: function (_,_,data) { return data==true; } },
+            { next: a3, guard: function (_,_,data) { return data==false; } }
         ];
 
 ## Sub-StateMachines (nested)
