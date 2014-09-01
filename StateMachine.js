@@ -26,6 +26,10 @@ THE SOFTWARE.
 */
 /*globals module*/
 
+/**
+ * @namespace HSM
+ */
+
 var HSM = (function () {
 
     ////////////
@@ -33,19 +37,73 @@ var HSM = (function () {
     ////////////
     var Logger = { debug: function(){}, trace: function(){} };
 
+/**
+ * @callback HSM.State~EntryFunc
+ * @param {HSM.State} previous state
+ * @param data in event
+ */
+/**
+ * @callback HSM.State~ExitFunc
+ * @param {HSM.State} next state
+ * @param data in event
+ */
+/**
+ * A guard function may be attached to any transition. If will be called before the transition is fired. If it doesn't return true,
+ * the transition will be disabled for the current event.
+ * @callback HSM.State~GuardFunc
+ * @param {HSM.State} source - current state
+ * @param {HSM.State} target - potential next state
+ * @param data - event parameters
+ */
+/**
+ * An action function may be attached to any transition. If will be called after all exit handlers and before all entry handlers are called.
+ * @callback HSM.State~ActionFunc
+ * @param {HSM.State} source - current state
+ * @param {HSM.State} target - next state
+ * @param data - event parameters
+ * @see {@link HSM.State~Handler} action
+ */
+/**
+  @typedef {Object} HSM.State~Handler
+  @property {HSM.State} next target state
+  @property {HSM.State~GuardFunc=} guard - disables the transition unless returns true. 
+  @property {HSM.State~ActionFunc=} action - called after all state exit handleris and before all state entry handlers are called.
+*/
+
+
+/**
+ * Represents a State.
+ * @class HSM.State
+ * @static
+ * @param {String} theStateID - Identifies the state. Must be unique in the containing state machine. 
+ */  
     var State = function (theStateID) {
         this._id = theStateID;
         this._owner = null;
+        /** Map of events to handlers. 
+         * Either a single handler or an array of handlers can be given. The guard of each handler will be called
+         * until a guard returns true (or a handler doesn't have a guard). This handler will then be triggered.
+         * @memberof! HSM.State# 
+         * @var {(HSM.State~Handler|HSM.State~Handler[])} handler[event] 
+         */
         this.handler = {};
+        /** @memberof! HSM.State# 
+         *  @var {HSM.State~EntryFunc}
+         */
+        this.on_entry = undefined;
+        /** @memberof! HSM.State# 
+         *  @var {HSM.State~ExitFunc}
+         */
+        this.on_exit = undefined;
     };
 
     State.prototype._enter = function (thePreviousState, theData) {
-        if ('on_entry' in this) {
+        if (this.on_entry !== undefined) {
             this.on_entry.apply(this, arguments);
         }
     };
     State.prototype._exit = function (theNextState, theData) {
-        if ('on_exit' in this) {
+        if (this.on_exit !== undefined) {
             this.on_exit.apply(this, arguments);
         }
     };
@@ -152,8 +210,12 @@ var HSM = (function () {
         return this._subMachines.map(function(s) { return s.state; });
     });
 
-
-    var StateMachine = function (theStates) {
+/**
+ * Represents a State Machine.
+ * @class HSM.StateMachine
+ * @param {HSM.State[]} theStates - the states that compose the state machine. The first state is the initial state. 
+ */  
+    var StateMachine = function(theStates) {
         this.states = {};
         this.ancestors = [];
         this._curState = null;
@@ -182,11 +244,11 @@ var HSM = (function () {
         return this._curState;
     });
 
-    StateMachine.prototype.switchState = function (newState, theAction, theData) {
+    StateMachine.prototype._switchState = function (newState, theAction, theData) {
         Logger.debug("State transition '" + this._curState+ "' => '" + newState + "'");
         // call old state's exit handler
         if (this._curState !== null && '_exit' in this.state) {
-            Logger.debug("<StateMachine::switchState> exiting state '" + this._curState + "'");
+            Logger.debug("<StateMachine::_switchState> exiting state '" + this._curState + "'");
             this.state._exit(newState, theData);
         }
         var oldState  = this._curState;
@@ -196,7 +258,7 @@ var HSM = (function () {
         this._curState = newState;
         // call new state's enter handler
         if (this._curState !== null && '_enter' in this.state) {
-            Logger.debug("<StateMachine::switchState> entering state '" + this._curState + "'");
+            Logger.debug("<StateMachine::_switchState> entering state '" + this._curState + "'");
             this.state._enter(oldState, theData);
         }
     };
@@ -204,31 +266,38 @@ var HSM = (function () {
     StateMachine.prototype.init = function (theData) {
         Logger.debug("<StateMachine::init> setting initial state: " + this.initialState);
         this._curState = null;
-        this.switchState(this.initialState, null, theData);
+        this._switchState(this.initialState, null, theData);
         return this;
     };
     StateMachine.prototype.teardown = function () {
-        this.switchState(null, null, {});
+        this._switchState(null, null, {});
     };
 
-    StateMachine.prototype.tryTransition = function(handler, data) {
-        if ( !('guard' in handler) || handler.guard(data)) {
-            this.switchState(handler.next, handler.action, data);
+    StateMachine.prototype._tryTransition = function(handler, data) {
+        if ( !('guard' in handler) || handler.guard(this._curState, handler.next, data)) {
+            this._switchState(handler.next, handler.action, data);
             return true;
         }
         return false;
     };
 
-    StateMachine.prototype.handleEvent = function (ev) {
+    /** 
+     *  Creates a new event an passes it to the top-level state machine for handling. Aliased as handleEvent
+     *  for backwards compatibility.
+     *  @memberof! HSM.StateMachine#
+     *  @param {string} event - event to be handled
+     *  @param [data] event parameters 
+     */
+    StateMachine.prototype.emit = function (ev) {
         if (this.ancestors.length > 0) {
             // if we are not at the top-level state machine,
             // call again at the top-level state machine
-            this.ancestors[0].handleEvent.apply(this.ancestors[0], arguments);
+            this.ancestors[0].emit.apply(this.ancestors[0], arguments);
         } else {
             this._eventQueue.push(arguments);
             // we are at the top-level state machine
             if (this._eventInProgress === true) {
-                Logger.debug("<StateMachine>::handleEvent: queuing event "+ev);
+                Logger.debug("<StateMachine>::emit: queuing event "+ev);
             } else {
                 this._eventInProgress = true;
                 while (this._eventQueue.length > 0) {
@@ -238,6 +307,8 @@ var HSM = (function () {
             }
         }
     };
+    StateMachine.prototype.handleEvent = StateMachine.prototype.emit; 
+
     StateMachine.prototype._handle = function (ev, data) {
         Logger.debug("<StateMachine::_handle> handling event " + ev);
         var handled = false;
@@ -256,13 +327,13 @@ var HSM = (function () {
                 var handlers = this.state.handler[ev];
                 var i;
                 for (i = 0; i < handlers.length; ++i) {
-                    if (this.tryTransition(handlers[i], data)) {
+                    if (this._tryTransition(handlers[i], data)) {
                         return true;
                     }
                 }
                 return false;
             }
-            return this.tryTransition(this.state.handler[ev], data);
+            return this._tryTransition(this.state.handler[ev], data);
         }
         return false;
 

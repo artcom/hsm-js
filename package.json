@@ -2,6 +2,7 @@
   "name": "hsm",
   "version": "0.9.1",
   "description": "hierarchical state machine framework",
+  "repository": "https://github.com/Mask/hsm-js.git",
   "main": "StateMachine.js",
   "scripts": {
       "test" : "buster-test"

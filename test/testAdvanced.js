@@ -26,13 +26,13 @@ buster.testCase("testAdvanced", {
         a1.handler.T1 = [
             {
                 next: a2,
-                guard: function (theData) {
+                guard: function (_,_,theData) {
                     return theData;
                 }
             },
             {
                 next: a3,
-                guard: function (theData) {
+                guard: function (_,_,theData) {
                     return !theData;
                 }
             }
@@ -40,7 +40,7 @@ buster.testCase("testAdvanced", {
         a2.handler.T2 = {
             next: a3,
             action: function (theData) {
-                this.handleEvent("T3");
+                this.emit("T3");
             }
         };
         a3.handler.T3 = {
