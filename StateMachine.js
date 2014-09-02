@@ -40,12 +40,12 @@ var HSM = (function () {
 /**
  * @callback HSM.State~EntryFunc
  * @param {HSM.State} previous state
- * @param data in event
+ * @param data - event parameters
  */
 /**
  * @callback HSM.State~ExitFunc
  * @param {HSM.State} next state
- * @param data in event
+ * @param data - event parameters
  */
 /**
  * A guard function may be attached to any transition. If will be called before the transition is fired. If it doesn't return true,
@@ -74,7 +74,6 @@ var HSM = (function () {
 /**
  * Represents a State.
  * @class HSM.State
- * @static
  * @param {String} theStateID - Identifies the state. Must be unique in the containing state machine. 
  */  
     var State = function (theStateID) {
@@ -126,12 +125,17 @@ var HSM = (function () {
     });
 
 
+    /** Adapter class for nested states 
+     * @class HSM.Sub
+     * @extends HSM.State
+     * @param {String} theStateID - Identifies the state. Must be unique in the containing state machine. 
+     * @param {HSM.StateMachine} theSubMachine - the nested state machine. 
+     */
     var Sub = function (theStateID, theSubMachine) {
         State.call(this, theStateID);
         this._subMachine = theSubMachine;
     };
 
-    // inheritance
     Sub.prototype = Object.create(State.prototype);
     Sub.prototype.constructor = Sub;
     // old-style inheritance - causes performance warnings in newer JS engines
@@ -162,6 +166,12 @@ var HSM = (function () {
         return this._subMachine.state;
     });
 
+    /** Adapter class for parallel states 
+     * @class HSM.Parallel
+     * @extends HSM.State
+     * @param {String} theStateID - Identifies the state. Must be unique in the containing state machine. 
+     * @param {HSM.StateMachine[]} theSubMachines - an array of parallel state machines. 
+     */
     var Parallel = function (theStateID, theSubMachines) {
         State.call(this, theStateID);
         this._subMachines = theSubMachines || [];
