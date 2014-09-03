@@ -5,6 +5,7 @@ if (typeof module === "object" && typeof require === "function") {
     var HSM = require("../StateMachine.js");
     // set up logging to console
     HSM.Logger.debug = console.log;
+    // HSM.Logger.trace = console.log;
 }
 
 var assert = buster.referee.assert;
@@ -14,48 +15,59 @@ buster.testCase("testAdvanced", {
         var _ = this;
         // execution log
         _.log = [];
-        
+
+        // a mixin for HSM.State which logs
+        // entry and exit calls
+        asLogging = function() {
+            this.on_entry = function(source) {
+                _.log.push(this._id+":entered(source:"+(source ? source.id : "null") +")");
+            };
+            this.on_exit = function(target) {
+                _.log.push(this._id+":exited(target:"+(target ? target.id : "null")+")");
+            };
+            return this;
+        };
+        asLogging.call(HSM.State.prototype);
+
         // State Machine 'a'
         var a1 = new HSM.State("a1");
-        a1.on_entry = function() { _.log.push("a1_entered"); };
         var a2 = new HSM.State("a2");
-        a2.on_entry = function() { _.log.push("a2_entered"); };
         var a3 = new HSM.State("a3");
-        a3.on_entry = function() { _.log.push("a3_entered"); };
 
         a1.handler.T1 = [
             {
-                next: a2,
+                target: a2,
                 guard: function (_,_,theData) {
                     return theData;
                 }
             },
             {
-                next: a3,
+                target: a3,
                 guard: function (_,_,theData) {
                     return !theData;
                 }
             }
         ];
         a2.handler.T2 = {
-            next: a3,
+            target: a3,
             action: function (theData) {
                 this.emit("T3");
             }
         };
         a3.handler.T3 = {
-            next: a1
+            target: a1
         };
 
     
         var a = new HSM.Sub("a", new HSM.StateMachine([a1, a2, a3]));
-        a.on_entry = function(thePreviousState, theData) { 
-            _.log.push("a_entered"); 
-        };
 
-        // State Machine 'b'
+        // State Machine 'b2'
+        var b21 = new HSM.State("b21");
+        var b22 = new HSM.State("b22");
+        
+        // State Machine 'b2'
         var b1 = new HSM.State("b1");
-        var b2 = new HSM.State("b2");
+        var b2 = new HSM.Sub("b2", new HSM.StateMachine([b21, b22]));
     
         var b = new HSM.Sub("b", new HSM.StateMachine([b1, b2]));
 
@@ -68,32 +80,63 @@ buster.testCase("testAdvanced", {
         
         var c = new HSM.Parallel("c", new HSM.StateMachine([c11, c12]), 
                                       new HSM.StateMachine([c21, c22]));
-        
+       
+        a.handler.T1 = { target: b };
+        a3.handler.T4 = {
+            target: b2
+        };
+        a3.handler.T5 = {
+            target: b22
+        };
+
         // Top State Machine
         _.sm = new HSM.StateMachine([a, b, c]).init();
 
     },
     "testEnter": function() {
         var _ = this;
-        assert.equals(["a_entered", "a1_entered"], _.log);
+        assert.equals(_.log, ["a:entered(source:null)", "a1:entered(source:null)"]);
     },
     "testFirstGuard": function() {
         var _ = this;
         _.log= [];
         _.sm.handleEvent("T1", true);
-        assert.equals(["a2_entered"], _.log);
+        assert.equals(_.log, ["a1:exited(target:a2)","a2:entered(source:a1)"]);
     },
     "testSecondGuard": function() {
         var _ = this;
         _.log= [];
         _.sm.handleEvent("T1", false);
-        assert.equals(["a3_entered"], _.log);
+        assert.equals(_.log, ["a1:exited(target:a3)","a3:entered(source:a1)"]);
     },
     "testRunToCompletion": function() {
         var _ = this;
-        _.log= [];
         _.sm.handleEvent("T1", true);
+        _.log= []; // start test at a2
         _.sm.handleEvent("T2", true);
-        assert.equals(["a2_entered", "a3_entered", "a1_entered"], _.log);
+        assert.equals(_.log, ["a2:exited(target:a3)", "a3:entered(source:a2)", "a3:exited(target:a1)", "a1:entered(source:a3)"]);
+    },
+    "testBubbleUp": function() {
+        var _ = this;
+        _.sm.handleEvent("T1", false);
+        assert.equals(_.sm.state.subState.id, "a3", 'substate "a1" processed T1, so superstate "a" didn\'t get it');
+        _.sm.handleEvent("T1");
+        assert.equals(_.sm.state.subState.id, "b1", 'substate "a3" didn\'t handle T1, so it bubbled up to "a"');
+    },
+    "testLowestCommonAncestorT4": function() {
+        var _ = this;
+        _.sm.handleEvent("T1", false);
+        _.log= []; // start in a3
+        _.sm.handleEvent("T4");
+        assert.equals(_.sm.state.id, "b");
+        assert.equals(_.log, ["a3:exited(target:b2)", "a:exited(target:b2)", "b:entered(source:a3)", "b2:entered(source:a3)", "b21:entered(source:a3)"]);
+    },
+    "testLowestCommonAncestorT5": function() {
+        var _ = this;
+        _.sm.handleEvent("T1", false);
+        _.log= []; // start in a3
+        _.sm.handleEvent("T5");
+        assert.equals(_.sm.state.id, "b");
+        assert.equals(_.log, ["a3:exited(target:b22)", "a:exited(target:b22)", "b:entered(source:a3)", "b2:entered(source:a3)", "b22:entered(source:a3)"]);
     }
 });

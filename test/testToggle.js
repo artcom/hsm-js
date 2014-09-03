@@ -18,12 +18,12 @@ buster.testCase("testToggle", {
         var onState = new HSM.State("OnState");
         var offState = new HSM.State("OffState");
 
-        offState.handler.switched_on = { next: onState };
+        offState.handler.switched_on = { target: onState };
         offState.on_exit = function() {
             _.exitedOffCount++;
         };
 
-        onState.handler.switched_off = { next: offState }; 
+        onState.handler.switched_off = { target: offState }; 
         onState.on_entry = function() {
             _.enteredOnCount++;
         };

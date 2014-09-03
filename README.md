@@ -32,11 +32,11 @@ handle events.
 Each state has a map of event handlers. These handlers will be called when the state receives the respective event.
 Event handlers are added to the handler[] array of each state:
 
-    a3.handler['T3'] = { next: a1 };
+    a3.handler['T3'] = { target: a1 };
 
 This specifies a transition from State to newState for event. Additionally, an action can be added to the transition:
 
-    a2.handler['T2'] = { next: a3, action: function() { this.emit('T3') };
+    a2.handler['T2'] = { target: a3, action: function() { this.emit('T3') };
 
 Events are triggered by calling the StateMachine.handleEvent() method. This can even be done inside an event handler's actionFunc.  If an event is 
 triggered while an event is being handled it will be queued until the current event completes. This is known as the run-to-completion (RTC) execution model.  
@@ -48,14 +48,18 @@ When using guards, multiple event handlers can be bound to a single trigger with
 the usual exit handler).
 
         a1.handler.T1 = [
-            { next: a2, guard: function (_,_,data) { return data==true; } },
-            { next: a3, guard: function (_,_,data) { return data==false; } }
+            { target: a2, guard: function (_,_,data) { return data==true; } },
+            { target: a3, guard: function (_,_,data) { return data==false; } }
         ];
+
+## Entry and Exit handlers
+
+Each state can have a `on_entry` and/or `on_exit` function. They will be invoked when the state is entered or exited. 
 
 ## Sub-StateMachines (nested)
 
-State Machines can be nested in other state machines my using the HSM.Sub adapter class. All events are propgated into the sub-state machines, and the sub state 
-machine is initialized and torn down on entry/exit of its containing state.
+State Machines can be nested in other state machines my using the HSM.Sub adapter class. All events are propgated into the sub-state machines, 
+and the sub state machine is initialized and torn down on entry/exit of its containing state.
 
         var a1 = new HSM.State("a1");
         var a2 = new HSM.State("a2");
@@ -63,7 +67,18 @@ machine is initialized and torn down on entry/exit of its containing state.
 
         var a = new HSM.Sub("a", new HSM.StateMachine([a1, a2, a3]));
 
-_a_ is a State which can be used to construct the _top_ state machine.
+Since _a_ is a State it can be used to construct the _top_ state machine, can have event handlers and entry and exit handlers.
+
+## Lowest Common Ancestor Algorithm
+
+A transition can span nested state machines. In the case, the transition is performed by the lowest common ancestor (LCA) of the
+source and target transition. All exit handlers from the source transition up to (but not including) the LCA are called, the transition action is
+called, then all entry handlers from the LCA down to the target state are called. Note that the initial states of these targeted state machines are not 
+entered - the explict target state path is used instead. If the target state is itself composite, it's nested states will be initialized in
+the normal manner (with their respective initial states).
+
+For example. T4 will fire `a3:on_exit, a:on_exit`, exiting up to the LCA, then `b:on_entry, b2:on_entry` entering to the target,
+followed by `b21:on_entry` since it is the initial state of `b2`. 
 
 ## Parallel State-Machines (orthogonal regions)
 
@@ -78,11 +93,7 @@ Parallel state machines are constructed with the HSM.Parallel adapter class.
         var c = new HSM.Parallel("c", new HSM.StateMachine([c11, c12]), 
                                       new HSM.StateMachine([c21, c22]));
 
-again, _c_ is a State which can be used in the constructor of the _top_ state machine.
-
-## Entry and Exit Actions
-
-Each state can have a on\_entry and/or on\_exit function. They will be invoked when the state is entered or exited. 
+again, _c_ is a State and can be used to construct the _top_ state machine. It can have event handlers and entry and exit handlers.
 
 ## Internal, External and Local Transitions (TODO)
 

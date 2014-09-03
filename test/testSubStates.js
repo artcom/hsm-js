@@ -16,25 +16,25 @@ buster.testCase("testSubStates", {
         var quietState = new HSM.State("Quiet");
         var loudState = new HSM.State("Loud");
     
-        quietState.handler.volume_up = { next: loudState };
-        loudState.handler.volume_down = { next: quietState };
+        quietState.handler.volume_up = { target: loudState };
+        loudState.handler.volume_down = { target: quietState };
         _.volumeStateMachine = new HSM.StateMachine([quietState, loudState]);
 
         // Main State Machine
         _.offState = new HSM.State("OffState");
         _.onState = new HSM.Sub("OnState", _.volumeStateMachine);
     
-        _.offState.handler.switched_on = { next: _.onState };
-        _.onState.handler.switched_off = { next: _.offState };
+        _.offState.handler.switched_on = { target: _.onState };
+        _.onState.handler.switched_off = { target: _.offState };
 
         _.sm = new HSM.StateMachine([_.offState, _.onState]).init();
     },
-    "testInheritance": function() {
+    "testPath": function() {
         var _ = this;
-        assert.equals([], _.sm.ancestors);
-        assert.equals([_.sm], _.volumeStateMachine.ancestors);
+        assert.equals([_.sm], _.sm.path);
+        assert.equals([_.sm, _.volumeStateMachine], _.volumeStateMachine.path);
     },
-    "testAncestors": function() {
+    "testInheritance": function() {
         var _ = this;
         assert(_.offState instanceof HSM.State);
         assert(_.onState instanceof HSM.State);

@@ -17,24 +17,24 @@ buster.testCase("testToggle", {
         var numLockOff = new HSM.State("NumLockOff");
         var numLockOn = new HSM.State("NumLockOn");
     
-        numLockOn.handler.numlock = { next: numLockOff };
-        numLockOff.handler.numlock = { next: numLockOn };
+        numLockOn.handler.numlock = { target: numLockOff };
+        numLockOff.handler.numlock = { target: numLockOn };
         _.numLockMachine = new HSM.StateMachine([numLockOff, numLockOn]);
 
         // CapsLock - also a simple toggle
         var capsLockOn = new HSM.State("CapsLockOn");
         var capsLockOff = new HSM.State("CapsLockOff");
     
-        capsLockOn.handler.capslock = { next: capsLockOff };
-        capsLockOff.handler.capslock = { next: capsLockOn };
+        capsLockOn.handler.capslock = { target: capsLockOff };
+        capsLockOff.handler.capslock = { target: capsLockOn };
         _.capsLockMachine = new HSM.StateMachine([capsLockOff, capsLockOn]);
 
         // Keyboard - can be plugged and unplugged. When plugged, it conatins two toggles: NumLock and CapsLock
         var keyboardOff = new HSM.State("KeyboardOff");
         var keyboardOn = new HSM.Parallel("KeyboardOn", [_.capsLockMachine, _.numLockMachine]);
     
-        keyboardOff.handler.plug = { next: keyboardOn };
-        keyboardOn.handler.unplug = { next: keyboardOff };
+        keyboardOff.handler.plug = { target: keyboardOn };
+        keyboardOn.handler.unplug = { target: keyboardOff };
         _.keyboardMachine = new HSM.StateMachine([keyboardOff, keyboardOn]).init();
     },
     "Parallel Test": function() {
