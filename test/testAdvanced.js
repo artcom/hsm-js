@@ -58,30 +58,33 @@ buster.testCase("testAdvanced", {
             target: a1
         };
 
-    
+
         var a = new HSM.Sub("a", new HSM.StateMachine([a1, a2, a3]));
 
         // State Machine 'b2'
         var b21 = new HSM.State("b21");
         var b22 = new HSM.State("b22");
-        
+
         // State Machine 'b2'
         var b1 = new HSM.State("b1");
         var b2 = new HSM.Sub("b2", new HSM.StateMachine([b21, b22]));
-    
+
         var b = new HSM.Sub("b", new HSM.StateMachine([b1, b2]));
 
         // State Machine c1
         var c11 = new HSM.State("c11");
         var c12 = new HSM.State("c12");
-    
+
         var c21 = new HSM.State("c21");
         var c22 = new HSM.State("c22");
-        
-        var c = new HSM.Parallel("c", new HSM.StateMachine([c11, c12]), 
+
+        var c = new HSM.Parallel("c", new HSM.StateMachine([c11, c12]),
                                       new HSM.StateMachine([c21, c22]));
-       
+
         a.handler.T1 = { target: b };
+        a.handler.T6 = {
+            target: a2,
+        };
         a3.handler.T4 = {
             target: b2
         };
@@ -138,5 +141,11 @@ buster.testCase("testAdvanced", {
         _.sm.handleEvent("T5");
         assert.equals(_.sm.state.id, "b");
         assert.equals(_.log, ["a3:exited(target:b22)", "a:exited(target:b22)", "b:entered(source:a3)", "b2:entered(source:a3)", "b22:entered(source:a3)"]);
+    },
+    "testExternalTransition": function() {
+        var _ = this;
+        _.log= [];
+        _.sm.handleEvent("T6");
+        assert.equals(_.log, ["a1:exited(target:a2)", "a:exited(target:a2)", "a:entered(source:a)", "a2:entered(source:a)"]);
     }
 });
