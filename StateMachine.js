@@ -68,7 +68,7 @@ var HSM = (function () {
 /**
   @typedef {Object} HSM.State~Handler
   @property {HSM.State} target - target state
-  @property {HSM.State~GuardFunc=} guard - disables the transition unless returns true. 
+  @property {HSM.State~GuardFunc=} guard - disables the transition unless returns true.
   @property {HSM.State~ActionFunc=} action - called after all state exit handlers and before any state entry handlers are called.
 */
 
@@ -76,24 +76,24 @@ var HSM = (function () {
 /**
  * Represents a State.
  * @class HSM.State
- * @param {String} theStateID - Identifies the state. Must be unique in the containing state machine. 
- */  
+ * @param {String} theStateID - Identifies the state. Must be unique in the containing state machine.
+ */
     var State = function (theStateID) {
         this._id = theStateID;
         this._owner = null;
-        /** Map of events to handlers. 
+        /** Map of events to handlers.
          * Either a single handler or an array of handlers can be given. The guard of each handler will be called
          * until a guard returns true (or a handler doesn't have a guard). This handler will then be triggered.
-         * @memberof! HSM.State# 
-         * @var {(HSM.State~Handler|HSM.State~Handler[])} handler[event] 
+         * @memberof! HSM.State#
+         * @var {(HSM.State~Handler|HSM.State~Handler[])} handler[event]
          */
         this.handler = {};
     };
-    /** @memberof! HSM.State# 
+    /** @memberof! HSM.State#
      *  @var {HSM.State~EntryFunc}
      */
     State.prototype.on_entry = undefined;
-    /** @memberof! HSM.State# 
+    /** @memberof! HSM.State#
      *  @var {HSM.State~ExitFunc}
      */
     State.prototype.on_exit = undefined;
@@ -126,11 +126,11 @@ var HSM = (function () {
     });
 
 
-    /** Adapter class for nested states 
+    /** Adapter class for nested states
      * @class HSM.Sub
      * @extends HSM.State
-     * @param {String} theStateID - Identifies the state. Must be unique in the containing state machine. 
-     * @param {HSM.StateMachine} theSubMachine - the nested state machine. 
+     * @param {String} theStateID - Identifies the state. Must be unique in the containing state machine.
+     * @param {HSM.StateMachine} theSubMachine - the nested state machine.
      */
     var Sub = function (theStateID, theSubMachine) {
         State.call(this, theStateID);
@@ -164,21 +164,21 @@ var HSM = (function () {
         return this._subMachine.state;
     });
 
-    /** Adapter class for parallel states 
+    /** Adapter class for parallel states
      * @class HSM.Parallel
      * @extends HSM.State
-     * @param {String} theStateID - Identifies the state. Must be unique in the containing state machine. 
-     * @param {HSM.StateMachine[]} theSubMachines - an array of parallel state machines. 
+     * @param {String} theStateID - Identifies the state. Must be unique in the containing state machine.
+     * @param {HSM.StateMachine[]} theSubMachines - an array of parallel state machines.
      */
     var Parallel = function (theStateID, theSubMachines) {
         var i;
         State.call(this, theStateID);
         this._subMachines = theSubMachines || [];
         for (i = 0; i < this._subMachines.length; ++i) {
-            this._subMachines[i]._owner = this; 
+            this._subMachines[i]._owner = this;
         }
     };
-    
+
     // inheritance
     Parallel.prototype = Object.create(State.prototype);
     Parallel.prototype.constructor = Parallel;
@@ -223,8 +223,8 @@ var HSM = (function () {
 /**
  * Represents a State Machine.
  * @class HSM.StateMachine
- * @param {HSM.State[]} theStates - the states that compose the state machine. The first state is the initial state. 
- */  
+ * @param {HSM.State[]} theStates - the states that compose the state machine. The first state is the initial state.
+ */
     var StateMachine = function(theStates) {
         this.states = {};
         this._owner = null;
@@ -279,25 +279,25 @@ var HSM = (function () {
         return this;
     };
 
-    /** 
-     *  initializes this state machine and set the current state to the initial state. 
+    /**
+     *  initializes this state machine and set the current state to the initial state.
      *  Any nested state machines will also be initialized and set to their initial state.
      *  @memberof! HSM.StateMachine#
-     *  @param [data] event parameters 
+     *  @param [data] event parameters
      */
     StateMachine.prototype.init = function (theData) {
         Logger.debug("<StateMachine "+this.id+"::init> setting initial state: " + this.initialState.id);
         this._enterState(null, this.initialState, theData);
         return this;
     };
-   
+
     /** Performs a transition between sourceState and targetState. Must only be called
-     * on the lowest common ancestor of sourceState and targetState 
+     * on the lowest common ancestor of sourceState and targetState
      */
     StateMachine.prototype._switchState = function (sourceState, targetState, theAction, theData) {
         Logger.debug("<StateMachine "+this.id+"::_switchState> "+sourceState.id + " => "+targetState.id);
         this._exitState(sourceState, targetState, theData);
-        if (theAction) { 
+        if (theAction) {
             theAction.apply(this, [sourceState, targetState].concat(theData));
         }
         this._enterState(sourceState, targetState, theData);
@@ -315,23 +315,23 @@ var HSM = (function () {
         } else if (targetLevel === thisLevel) {
             this._curState = targetState;
         } else {
-            this._curState = targetState._owner.path[thisLevel]._owner; 
+            this._curState = targetState._owner.path[thisLevel]._owner;
         }
         Logger.trace("<StateMachine "+this.id+"::_enterState> entering state: " + this._curState.id+", targetState: "+targetState.id);
         // call new state's enter handler
         this.state._enter(sourceState, targetState, theData);
     };
-   
+
     StateMachine.prototype._exitState = function (sourceState, targetState, theData) {
         Logger.trace("<StateMachine "+this.id+"::_exitState> exiting state: " + this._curState.id);
         this.state._exit(targetState, theData);
     };
-   
+
     StateMachine.prototype.teardown = function (targetState, theData) {
         this._exitState(this.state, targetState, theData);
     };
 
-    /** check if this transition's guard passes (if one exists) and 
+    /** check if this transition's guard passes (if one exists) and
      * execute the transition
      */
     StateMachine.prototype._tryTransition = function(handler, data) {
@@ -344,12 +344,12 @@ var HSM = (function () {
         return false;
     };
 
-    /** 
+    /**
      *  Creates a new event an passes it to the top-level state machine for handling. Aliased as handleEvent
      *  for backwards compatibility.
      *  @memberof! HSM.StateMachine#
      *  @param {string} event - event to be handled
-     *  @param [data] event parameters 
+     *  @param [data] event parameters
      */
     StateMachine.prototype.emit = function (ev) {
         if (this.path.length > 1) {
@@ -370,10 +370,10 @@ var HSM = (function () {
             }
         }
     };
-    StateMachine.prototype.handleEvent = StateMachine.prototype.emit; 
+    StateMachine.prototype.handleEvent = StateMachine.prototype.emit;
 
     StateMachine.prototype._handle = function (ev, data) {
-        // check if the current state is a (nested) statemachine, if so, give it the event. 
+        // check if the current state is a (nested) statemachine, if so, give it the event.
         // if it handles the event, stop processing it here.
         if ('_handle' in this.state) {
             Logger.trace("<StateMachine "+this.id+"::_handle> handing down " + ev);
