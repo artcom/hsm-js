@@ -9,8 +9,8 @@ if (typeof module === "object" && typeof require === "function") {
 }
 
 var assert = buster.referee.assert;
-    HSM.Logger.debug = console.log;
-    HSM.Logger.trace = console.log;
+// HSM.Logger.debug = console.log;
+// HSM.Logger.trace = console.log;
 
 buster.testCase("testAdvanced", {
     setUp: function() {
