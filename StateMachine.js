@@ -125,6 +125,16 @@ var HSM = (function () {
         this._owner = theOwnerMachine;
     });
 
+    State.prototype.hasAncestor = function(other) {
+      if (this._owner.container === null) {
+        return false;
+      }
+      if (this._owner.container === other) {
+        return true;
+      }
+      return this._owner.container.hasAncestor(other);
+    };
+
     /** get the lowest common ancestor state-machine of this
      * state and an arbitrary other state
      */
@@ -280,6 +290,10 @@ var HSM = (function () {
         return this._curState;
     });
 
+    StateMachine.prototype.__defineGetter__('container', function () {
+        return this._container;
+    });
+
     /**
      *  initializes this state machine and set the current state to the initial state.
      *  Any nested state machines will also be initialized and set to their initial state.
@@ -295,11 +309,12 @@ var HSM = (function () {
     /** Performs a transition between sourceState and targetState. Must only be called
      * on the lowest common ancestor of sourceState and targetState
      */
-    StateMachine.prototype._switchState = function (sourceState, targetState, theAction, theData) {
+    StateMachine.prototype._switchState = function (sourceState, theHandler, theData) {
+        var targetState = theHandler.target;
         Logger.debug("<StateMachine "+this.id+"::_switchState> "+sourceState.id + " => "+targetState.id);
         this._exitState(sourceState, targetState, theData);
-        if (theAction) {
-            theAction.apply(this, [sourceState, targetState].concat(theData));
+        if (theHandler.action) {
+            theHandler.action.apply(this, [sourceState, targetState].concat(theData));
         }
         this._enterState(sourceState, targetState, theData);
     };
@@ -336,10 +351,17 @@ var HSM = (function () {
      * execute the transition
      */
     StateMachine.prototype._tryTransition = function(handler, data) {
-        if ( !('guard' in handler) || handler.guard(this._curState, handler.target, data)) {
-            var lca = this._curState.lca(handler.target);
-            Logger.trace("<StateMachine "+this.id+"::_tryTransition> guard passed, passing event to lca: " + lca.id);
-            lca._switchState(this._curState, handler.target, handler.action, data);
+        var sourceState = this._curState;
+        var targetState = handler.target;
+        if ( !('guard' in handler) || handler.guard(sourceState, targetState, data)) {
+            var excecutor = sourceState.lca(targetState);
+            Logger.trace("<StateMachine "+this.id+"::_tryTransition> guard passed, passing event to lca: " + excecutor.id);
+            if (handler.kind === 'local' &&
+                (sourceState.hasAncestor(targetState) || targetState.hasAncestor(sourceState)))
+            {
+              excecutor = excecutor._curState._subMachine;
+            }
+            excecutor._switchState(this._curState, handler, data);
             return true;
         }
         return false;

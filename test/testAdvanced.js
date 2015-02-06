@@ -9,6 +9,8 @@ if (typeof module === "object" && typeof require === "function") {
 }
 
 var assert = buster.referee.assert;
+    HSM.Logger.debug = console.log;
+    HSM.Logger.trace = console.log;
 
 buster.testCase("testAdvanced", {
     setUp: function() {
@@ -18,7 +20,7 @@ buster.testCase("testAdvanced", {
 
         // a mixin for HSM.State which logs
         // entry and exit calls
-        asLogging = function() {
+        var asLogging = function() {
             this.on_entry = function(source) {
                 _.log.push(this._id+":entered(source:"+(source ? source.id : "null") +")");
             };
@@ -82,14 +84,26 @@ buster.testCase("testAdvanced", {
                                       new HSM.StateMachine([c21, c22]));
 
         a.handler.T1 = { target: b };
-        a.handler.T6 = {
-            target: a2,
-        };
         a3.handler.T4 = {
             target: b2
         };
         a3.handler.T5 = {
-            target: b22
+            target: b22,
+            kind: 'local' // just to test this - should be irrelevant
+        };
+        a.handler.T6 = {
+            target: a2
+        };
+        a2.handler.T7 = {
+            target: a
+        };
+        b.handler.T8 = {
+            target: b22,
+            kind: 'local'
+        };
+        b22.handler.T9 = {
+            target: b,
+            kind: 'local'
         };
 
         // Top State Machine
@@ -147,5 +161,16 @@ buster.testCase("testAdvanced", {
         _.log= [];
         _.sm.handleEvent("T6");
         assert.equals(_.log, ["a1:exited(target:a2)", "a:exited(target:a2)", "a:entered(source:a)", "a2:entered(source:a)"]);
+        _.log= [];
+        _.sm.handleEvent("T7");
+        assert.equals(_.log, ["a2:exited(target:a)", "a:exited(target:a)", "a:entered(source:a2)", "a1:entered(source:a2)"]);
+    },
+    "testLocalTransition": function() {
+        var _ = this;
+        _.sm.handleEvent("T1", true);
+        _.sm.handleEvent("T1", true);
+        _.log= []; // start in b1
+        _.sm.handleEvent("T8");
+        assert.equals(_.log, ["b1:exited(target:b22)", "b2:entered(source:b)", "b22:entered(source:b)"]);
     }
 });
