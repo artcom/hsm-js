@@ -95,7 +95,19 @@ Parallel state machines are constructed with the HSM.Parallel adapter class.
 
 again, _c_ is a State and can be used to construct the _top_ state machine. It can have event handlers and entry and exit handlers.
 
-## Internal, External and Local Transitions (TODO)
+## External and Local Transitions
+
+A transition can be declared local by adding the optional paramater `kind: 'local'`:
+
+        b22.handler.T9 = {
+            target: b,
+            kind: 'local'
+        };
+
+If the source is an ancestor of the target (or the otherway around) the ancestor's exit and entry handlers will not be called. In other cases, the local transition
+is identical to an external transition (the default).
+
+## Internal Transitions (TODO)
 
 [Build Status]: https://travis-ci.org/Mask/hsm-js
 [BS img]: https://travis-ci.org/Mask/hsm-js.png

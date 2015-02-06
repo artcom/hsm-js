@@ -1,6 +1,6 @@
 {
   "name": "hsm",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "hierarchical state machine framework",
   "repository": "https://github.com/Mask/hsm-js.git",
   "main": "StateMachine.js",
