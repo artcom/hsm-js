@@ -80,7 +80,7 @@ var HSM = (function () {
  */
     var State = function (theStateID) {
         this._id = theStateID;
-        this._owner = null;
+        this._owner = null; // set to state machine
         /** Map of events to handlers.
          * Either a single handler or an array of handlers can be given. The guard of each handler will be called
          * until a guard returns true (or a handler doesn't have a guard). This handler will then be triggered.
@@ -150,7 +150,7 @@ var HSM = (function () {
     var Sub = function (theStateID, theSubMachine) {
         State.call(this, theStateID);
         this._subMachine = theSubMachine;
-        this._subMachine._owner = this;
+        this._subMachine._container = this;
     };
 
     Sub.prototype = Object.create(State.prototype);
@@ -190,7 +190,7 @@ var HSM = (function () {
         State.call(this, theStateID);
         this._subMachines = theSubMachines || [];
         for (i = 0; i < this._subMachines.length; ++i) {
-            this._subMachines[i]._owner = this;
+            this._subMachines[i]._container = this;
         }
     };
 
@@ -242,7 +242,7 @@ var HSM = (function () {
  */
     var StateMachine = function(theStates) {
         this.states = {};
-        this._owner = null;
+        this._container = null; // set to containing state if part of a composite
         this._curState = null;
         this._eventInProgress = false;
         this._eventQueue = [];
@@ -267,13 +267,13 @@ var HSM = (function () {
 
     StateMachine.prototype.__defineGetter__('path', function () {
         var p = [this];
-        while (p[0]._owner) {
-            p.unshift(p[0]._owner._owner);
+        while (p[0]._container) {
+            p.unshift(p[0]._container._owner);
         }
         return p;
     });
     StateMachine.prototype.__defineGetter__('id', function () {
-        return this._owner ? this._owner._id : '_top_';
+        return this._container ? this._container._id : '_top_';
     });
 
     StateMachine.prototype.__defineGetter__('state', function () {
@@ -316,7 +316,7 @@ var HSM = (function () {
         } else if (targetLevel === thisLevel) {
             this._curState = targetState;
         } else {
-            this._curState = targetState._owner.path[thisLevel]._owner;
+            this._curState = targetState._owner.path[thisLevel]._container;
         }
         Logger.trace("<StateMachine "+this.id+"::_enterState> entering state: " + this._curState.id+", targetState: "+targetState.id);
         // call new state's enter handler
