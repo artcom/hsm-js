@@ -125,6 +125,21 @@ var HSM = (function () {
         this._owner = theOwnerMachine;
     });
 
+    /** get the lowest common ancestor state-machine of this
+     * state and an arbitrary other state
+     */
+    State.prototype.lca = function(state) {
+        var i;
+        var thisPath = this._owner.path;
+        var otherPath = state._owner.path;
+        for (i = 1; i < thisPath.length; ++i) {
+            if (otherPath[i] !== thisPath[i]) {
+                return thisPath[i-1];
+            }
+        }
+        return this._owner;
+    };
+
 
     /** Adapter class for nested states
      * @class HSM.Sub
@@ -265,20 +280,6 @@ var HSM = (function () {
         return this._curState;
     });
 
-    /** get the lowest common ancestor of states of this
-     * state machine and an arbitrary other state
-     */
-    StateMachine.prototype.lca = function(state) {
-        var i;
-        var thisPath = this.path;
-        for (i = 1; i < thisPath.length; ++i) {
-            if (state._owner.path[i] !== thisPath[i]) {
-                return thisPath[i-1];
-            }
-        }
-        return this;
-    };
-
     /**
      *  initializes this state machine and set the current state to the initial state.
      *  Any nested state machines will also be initialized and set to their initial state.
@@ -336,7 +337,7 @@ var HSM = (function () {
      */
     StateMachine.prototype._tryTransition = function(handler, data) {
         if ( !('guard' in handler) || handler.guard(this._curState, handler.target, data)) {
-            var lca = this.lca(handler.target);
+            var lca = this._curState.lca(handler.target);
             Logger.trace("<StateMachine "+this.id+"::_tryTransition> guard passed, passing event to lca: " + lca.id);
             lca._switchState(this._curState, handler.target, handler.action, data);
             return true;
