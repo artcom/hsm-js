@@ -126,14 +126,23 @@ var HSM = (function () {
     });
 
     State.prototype.hasAncestor = function(other) {
-      if (this._owner.container === null) {
-        return false;
-      }
-      if (this._owner.container === other) {
-        return true;
-      }
-      return this._owner.container.hasAncestor(other);
+        if (this._owner.container === null) {
+          return false;
+        }
+        if (this._owner.container === other) {
+          return true;
+        }
+        return this._owner.container.hasAncestor(other);
     };
+
+    State.prototype.hasAncestorStateMachine = function(stateMachine) {
+        for (i = 0; i < this.owner.path.length; ++i) {
+            if (this.owner.path[i] === stateMachine) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /** get the lowest common ancestor state-machine of this
      * state and an arbitrary other state
@@ -218,7 +227,12 @@ var HSM = (function () {
         var i;
         State.prototype._enter.apply(this, arguments);
         for (i = 0; i < this._subMachines.length; ++i) {
-            this._subMachines[i]._enterState(sourceState, targetState, theData);
+            var subMachine = this._subMachines[i];
+            if (targetState.hasAncestorStateMachine(subMachine)) {
+                subMachine._enterState(sourceState, targetState, theData);
+            } else {
+                subMachine.init(theData);
+            }
         }
     };
     Parallel.prototype._exit = function (theNextState, theData) {

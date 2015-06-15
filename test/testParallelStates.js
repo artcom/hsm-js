@@ -34,6 +34,7 @@ buster.testCase("testToggle", {
         var keyboardOn = new HSM.Parallel("KeyboardOn", [_.capsLockMachine, _.numLockMachine]);
     
         keyboardOff.handler.plug = { target: keyboardOn };
+        keyboardOff.handler.quickstart = { target: numLockOn };
         keyboardOn.handler.unplug = { target: keyboardOff };
         _.keyboardMachine = new HSM.StateMachine([keyboardOff, keyboardOn]).init();
     },
@@ -72,6 +73,16 @@ buster.testCase("testToggle", {
         // plug the keyboard back in and check whether the toggles are back at their initial states 
         _.keyboardMachine.handleEvent("plug");
         assert.equals("KeyboardOn/(CapsLockOff|NumLockOff)", _.keyboardMachine.toString());
+
+        // now unplug keyboard again
+        _.keyboardMachine.handleEvent("unplug");
+        assert.equals("KeyboardOff", _.keyboardMachine.toString());
+
+        // plug keyboard in again and activage numlock right away
+        _.keyboardMachine.handleEvent("quickstart");
+        assert.equals("KeyboardOn/(CapsLockOff|NumLockOn)", _.keyboardMachine.toString());
+
+
     }
 });
 
