@@ -69,9 +69,9 @@ and the sub state machine is initialized and torn down on entry/exit of its cont
 
 Since _a_ is a State it can be used to construct the _top_ state machine, can have event handlers and entry and exit handlers.
 
-## Lowest Common Ancestor Algorithm
+## Least Common Ancestor Algorithm
 
-A transition can span nested state machines. In the case, the transition is performed by the lowest common ancestor (LCA) of the
+A transition can span nested state machines. In the case, the transition is performed by the least common ancestor (LCA) of the
 source and target transition. All exit handlers from the source transition up to (but not including) the LCA are called, the transition action is
 called, then all entry handlers from the LCA down to the target state are called. Note that the initial states of these targeted state machines are not 
 entered - the explict target state path is used instead. If the target state is itself composite, it's nested states will be initialized in
