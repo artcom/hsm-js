@@ -81,8 +81,6 @@ buster.testCase("testToggle", {
         // plug keyboard in again and activage numlock right away
         _.keyboardMachine.handleEvent("quickstart");
         assert.equals("KeyboardOn/(CapsLockOff|NumLockOn)", _.keyboardMachine.toString());
-
-
     }
 });
 
