@@ -107,7 +107,19 @@ A transition can be declared local by adding the optional paramater `kind: 'loca
 If the source is an ancestor of the target (or the otherway around) the ancestor's exit and entry handlers will not be called. In other cases, the local transition
 is identical to an external transition (the default).
 
-## Internal Transitions (TODO)
+## Internal Transitions
+
+A transition can be declared internal by adding the optional paramater `kind: 'internal'` and an action:
+
+        b1.handler.T10 = {
+            target: b1,
+            kind: 'internal',
+            action: function (theData) {
+                // do something ...
+            }
+        };
+
+The target state can be either omitted or be identical to the source state.
 
 [Build Status]: https://travis-ci.org/artcom/hsm-js
 [BS img]: https://travis-ci.org/artcom/hsm-js.png

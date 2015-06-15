@@ -368,14 +368,22 @@ var HSM = (function () {
         var sourceState = this._curState;
         var targetState = handler.target;
         if ( !('guard' in handler) || handler.guard(sourceState, targetState, data)) {
-            var excecutor = sourceState.lca(targetState);
-            Logger.trace("<StateMachine "+this.id+"::_tryTransition> guard passed, passing event to lca: " + excecutor.id);
-            if (handler.kind === 'local' &&
-                (sourceState.hasAncestor(targetState) || targetState.hasAncestor(sourceState)))
-            {
-              excecutor = excecutor._curState._subMachine;
+            Logger.trace("<StateMachine "+this.id+"::_tryTransition> guard passed.");
+            if (handler.kind === 'internal' && (targetState === null || targetState === sourceState)) {
+                Logger.debug("<StateMachine "+this.id+"::_tryTransition> performing internal transition: ", handler.action);
+                if (handler.action) {
+                    handler.action.apply(this, [sourceState, targetState].concat(data));
+                }
+            } else {
+                var excecutor = sourceState.lca(targetState);
+                Logger.trace("<StateMachine "+this.id+"::_tryTransition> passing event to lca: " + excecutor.id);
+                if (handler.kind === 'local' &&
+                    (sourceState.hasAncestor(targetState) || targetState.hasAncestor(sourceState)))
+                {
+                  excecutor = excecutor._curState._subMachine;
+                }
+                excecutor._switchState(this._curState, handler, data);
             }
-            excecutor._switchState(this._curState, handler, data);
             return true;
         }
         return false;

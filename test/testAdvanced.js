@@ -105,7 +105,14 @@ buster.testCase("testAdvanced", {
             target: b,
             kind: 'local'
         };
-
+        b1.handler.T10 = {
+            target: b1,
+            kind: 'internal',
+            action: function (theData) {
+                _.log.push("T10:internalAction()");
+            }
+        };
+        
         // Top State Machine
         _.sm = new HSM.StateMachine([a, b, c]).init();
 
@@ -175,5 +182,17 @@ buster.testCase("testAdvanced", {
         _.log = [];
         _.sm.handleEvent("T9");
         assert.equals(_.log, ["b22:exited(target:b)", "b2:exited(target:b)", "b1:entered(source:b22)"]);
+    },
+    "testInternalTransition": function() {
+        var _ = this;
+        _.sm.handleEvent();
+        var _ = this;
+        _.sm.handleEvent("T1", true);
+        _.sm.handleEvent("T1");
+        _.log = []; // start in b1
+        _.sm.handleEvent("T10");
+        _.sm.handleEvent("T10");
+        _.sm.handleEvent("T10");
+        assert.equals(_.log, ["T10:internalAction()", "T10:internalAction()", "T10:internalAction()"]);
     }
 });
