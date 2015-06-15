@@ -1,6 +1,6 @@
 # Hierarchial State Machine for Javascript
 
-[![Build Status][BS img]][Build Status] [API docs](http://mask.github.io/hsm-js/HSM.html)
+[![Build Status][BS img]][Build Status] [API docs](http://artcom.github.io/hsm-js/HSM.html)
 
 ## Description
 
@@ -109,6 +109,6 @@ is identical to an external transition (the default).
 
 ## Internal Transitions (TODO)
 
-[Build Status]: https://travis-ci.org/Mask/hsm-js
-[BS img]: https://travis-ci.org/Mask/hsm-js.png
+[Build Status]: https://travis-ci.org/artcom/hsm-js
+[BS img]: https://travis-ci.org/artcom/hsm-js.png
 
