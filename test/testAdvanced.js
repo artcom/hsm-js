@@ -116,20 +116,20 @@ buster.testCase("testAdvanced", {
     },
     "testFirstGuard": function() {
         var _ = this;
-        _.log= [];
+        _.log = [];
         _.sm.handleEvent("T1", true);
         assert.equals(_.log, ["a1:exited(target:a2)","a2:entered(source:a1)"]);
     },
     "testSecondGuard": function() {
         var _ = this;
-        _.log= [];
+        _.log = [];
         _.sm.handleEvent("T1", false);
         assert.equals(_.log, ["a1:exited(target:a3)","a3:entered(source:a1)"]);
     },
     "testRunToCompletion": function() {
         var _ = this;
         _.sm.handleEvent("T1", true);
-        _.log= []; // start test at a2
+        _.log = []; // start test at a2
         _.sm.handleEvent("T2", true);
         assert.equals(_.log, ["a2:exited(target:a3)", "a3:entered(source:a2)", "a3:exited(target:a1)", "a1:entered(source:a3)"]);
     },
@@ -143,7 +143,7 @@ buster.testCase("testAdvanced", {
     "testLowestCommonAncestorT4": function() {
         var _ = this;
         _.sm.handleEvent("T1", false);
-        _.log= []; // start in a3
+        _.log = []; // start in a3
         _.sm.handleEvent("T4");
         assert.equals(_.sm.state.id, "b");
         assert.equals(_.log, ["a3:exited(target:b2)", "a:exited(target:b2)", "b:entered(source:a3)", "b2:entered(source:a3)", "b21:entered(source:a3)"]);
@@ -151,26 +151,29 @@ buster.testCase("testAdvanced", {
     "testLowestCommonAncestorT5": function() {
         var _ = this;
         _.sm.handleEvent("T1", false);
-        _.log= []; // start in a3
+        _.log = []; // start in a3
         _.sm.handleEvent("T5");
         assert.equals(_.sm.state.id, "b");
         assert.equals(_.log, ["a3:exited(target:b22)", "a:exited(target:b22)", "b:entered(source:a3)", "b2:entered(source:a3)", "b22:entered(source:a3)"]);
     },
     "testExternalTransition": function() {
         var _ = this;
-        _.log= [];
+        _.log = [];
         _.sm.handleEvent("T6");
         assert.equals(_.log, ["a1:exited(target:a2)", "a:exited(target:a2)", "a:entered(source:a)", "a2:entered(source:a)"]);
-        _.log= [];
+        _.log = [];
         _.sm.handleEvent("T7");
         assert.equals(_.log, ["a2:exited(target:a)", "a:exited(target:a)", "a:entered(source:a2)", "a1:entered(source:a2)"]);
     },
     "testLocalTransition": function() {
         var _ = this;
         _.sm.handleEvent("T1", true);
-        _.sm.handleEvent("T1", true);
-        _.log= []; // start in b1
+        _.sm.handleEvent("T1");
+        _.log = []; // start in b1
         _.sm.handleEvent("T8");
         assert.equals(_.log, ["b1:exited(target:b22)", "b2:entered(source:b)", "b22:entered(source:b)"]);
+        _.log = [];
+        _.sm.handleEvent("T9");
+        assert.equals(_.log, ["b22:exited(target:b)", "b2:exited(target:b)", "b1:entered(source:b22)"]);
     }
 });
