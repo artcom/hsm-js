@@ -32,11 +32,11 @@ handle events.
 Each state has a map of event handlers. These handlers will be called when the state receives the respective event.
 Event handlers are added to the handler[] array of each state:
 
-    a3.handler['T3'] = { target: a1 };
+    a3.handler.T3 = { target: a1 };
 
 This specifies a transition from State to newState for event. Additionally, an action can be added to the transition:
 
-    a2.handler['T2'] = { target: a3, action: function() { this.emit('T3') };
+    a2.handler.T2 = { target: a3, action: function() { this.emit('T3') };
 
 Events are triggered by calling the StateMachine.handleEvent() method. This can even be done inside an event handler's actionFunc.  If an event is 
 triggered while an event is being handled it will be queued until the current event completes. This is known as the run-to-completion (RTC) execution model.  
