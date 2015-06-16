@@ -123,7 +123,7 @@ buster.testCase("testAdvanced", {
             target: b2, // invalid definition of an internal transition
             kind: 'internal',
             action: function (theData) {
-                _.log.push("T11:internalAction()");
+                _.log.push("T12:invalid()");
             }
         };
         
