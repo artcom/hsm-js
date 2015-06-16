@@ -370,7 +370,7 @@ var HSM = (function () {
         if ( !('guard' in handler) || handler.guard(sourceState, targetState, data)) {
             Logger.trace("<StateMachine "+this.id+"::_tryTransition> guard passed.");
             if (handler.kind === 'internal' && (targetState === null || targetState === sourceState)) {
-                Logger.debug("<StateMachine "+this.id+"::_tryTransition> performing internal transition: ", handler.action);
+                Logger.trace("<StateMachine "+this.id+"::_tryTransition> performing internal transition.");
                 if (handler.action) {
                     handler.action.apply(this, [sourceState, targetState].concat(data));
                 }
