@@ -112,6 +112,20 @@ buster.testCase("testAdvanced", {
                 _.log.push("T10:internalAction()");
             }
         };
+        b1.handler.T11 = {
+            target: null,
+            kind: 'internal',
+            action: function (theData) {
+                _.log.push("T11:internalAction()");
+            }
+        };
+        b1.handler.T12 = {
+            target: b2, // invalid definition of an internal transition
+            kind: 'internal',
+            action: function (theData) {
+                _.log.push("T11:internalAction()");
+            }
+        };
         
         // Top State Machine
         _.sm = new HSM.StateMachine([a, b, c]).init();
@@ -183,7 +197,7 @@ buster.testCase("testAdvanced", {
         _.sm.handleEvent("T9");
         assert.equals(_.log, ["b22:exited(target:b)", "b2:exited(target:b)", "b1:entered(source:b22)"]);
     },
-    "testInternalTransition": function() {
+    "testInternalTransitionWithExplicitTarget": function() {
         var _ = this;
         _.sm.handleEvent();
         var _ = this;
@@ -191,8 +205,26 @@ buster.testCase("testAdvanced", {
         _.sm.handleEvent("T1");
         _.log = []; // start in b1
         _.sm.handleEvent("T10");
-        _.sm.handleEvent("T10");
-        _.sm.handleEvent("T10");
-        assert.equals(_.log, ["T10:internalAction()", "T10:internalAction()", "T10:internalAction()"]);
+        assert.equals(_.log, ["T10:internalAction()"]);
+    },
+    "testInternalTransitionWithOmittedTarget": function() {
+        var _ = this;
+        _.sm.handleEvent();
+        var _ = this;
+        _.sm.handleEvent("T1", true);
+        _.sm.handleEvent("T1");
+        _.log = []; // start in b1
+        _.sm.handleEvent("T11");
+        assert.equals(_.log, ["T11:internalAction()"]);
+    },
+    "testInvalidInternalTransition": function() {
+        var _ = this;
+        _.sm.handleEvent();
+        var _ = this;
+        _.sm.handleEvent("T1", true);
+        _.sm.handleEvent("T1");
+        _.log = []; // start in b1
+        _.sm.handleEvent("T12");
+        assert.equals(_.log, []);
     }
 });

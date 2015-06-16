@@ -369,10 +369,12 @@ var HSM = (function () {
         var targetState = handler.target;
         if ( !('guard' in handler) || handler.guard(sourceState, targetState, data)) {
             Logger.trace("<StateMachine "+this.id+"::_tryTransition> guard passed.");
-            if (handler.kind === 'internal' && (targetState === null || targetState === sourceState)) {
-                Logger.debug("<StateMachine "+this.id+"::_tryTransition> performing internal transition: ", handler.action);
-                if (handler.action) {
-                    handler.action.apply(this, [sourceState, targetState].concat(data));
+            if (handler.kind === 'internal') { 
+                Logger.trace("<StateMachine "+this.id+"::_tryTransition> performing internal transition.");
+                if(targetState === null || targetState === sourceState) {
+                    if (handler.action) {
+                        handler.action.apply(this, [sourceState, targetState].concat(data));
+                    }
                 }
             } else {
                 var excecutor = sourceState.lca(targetState);
